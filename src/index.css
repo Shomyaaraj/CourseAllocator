@@ -153,6 +153,13 @@ a {
   margin-right: auto;
 }
 
+/* Sidebar layout utility — offsets main content from the 256px fixed sidebar */
+@media (min-width: 1024px) {
+  .sidebar-offset {
+    margin-left: 16rem; /* 256px = w-64 sidebar width */
+  }
+}
+
 /* Page fade animation */
 
 @keyframes fadeIn {

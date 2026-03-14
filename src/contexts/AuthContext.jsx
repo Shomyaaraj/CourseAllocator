@@ -6,7 +6,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -42,6 +42,44 @@ export function AuthProvider({ children }) {
         console.error('Error writing user profile to Firestore in background:', err);
         // Here you might implement a retry mechanism or notify the user
       });
+    return cred;
+  }
+
+  async function signupAdmin(email, password, profileData, inviteCode) {
+    // Validate invite code from Firestore
+    const configRef = doc(db, 'config', 'adminInvite');
+    const configSnap = await getDoc(configRef);
+    if (!configSnap.exists()) {
+      throw { code: 'admin/no-config', message: 'Admin registration is not configured.' };
+    }
+    const { code: validCode, usesLeft } = configSnap.data();
+    if (inviteCode !== validCode) {
+      throw { code: 'admin/invalid-code', message: 'Invalid invite code.' };
+    }
+    if (usesLeft !== undefined && usesLeft <= 0) {
+      throw { code: 'admin/code-exhausted', message: 'Invite code has been fully used.' };
+    }
+
+    // Create Firebase Auth user
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const userDoc = {
+      uid: cred.user.uid,
+      email,
+      role: 'admin',
+      name: profileData.name,
+      employeeId: profileData.employeeId,
+      department: profileData.department,
+      designation: profileData.designation,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to Firestore & decrement invite usage
+    await setDoc(doc(db, 'users', cred.user.uid), userDoc);
+    if (usesLeft !== undefined) {
+      await updateDoc(configRef, { usesLeft: increment(-1) });
+    }
+
+    setUserProfile(userDoc);
     return cred;
   }
 
@@ -88,6 +126,7 @@ export function AuthProvider({ children }) {
     userProfile,
     setUserProfile,
     signup,
+    signupAdmin,
     login,
     logout,
     loading

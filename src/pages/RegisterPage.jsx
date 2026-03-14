@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { HiAcademicCap, HiEnvelope, HiLockClosed, HiUser, HiIdentification, HiBuildingOffice2, HiEye, HiEyeSlash } from 'react-icons/hi2';
+import { HiAcademicCap, HiEnvelope, HiLockClosed, HiUser, HiIdentification, HiBuildingOffice2, HiEye, HiEyeSlash, HiChartBar } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 
 const departments = [
@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     registrationNumber: '',
+    cgpa: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -50,6 +51,10 @@ export default function RegisterPage() {
     if (!formData.department) {
       return toast.error('Please select a department');
     }
+    const cgpa = parseFloat(formData.cgpa);
+    if (formData.cgpa && (isNaN(cgpa) || cgpa < 0 || cgpa > 10)) {
+      return toast.error('CGPA must be between 0 and 10');
+    }
 
     setLoading(true);
     try {
@@ -58,6 +63,7 @@ export default function RegisterPage() {
         registrationNumber: formData.registrationNumber,
         department: formData.department,
         semester: parseInt(formData.semester),
+        cgpa: parseFloat(formData.cgpa) || null,
       });
       toast.success('Account created successfully!');
       navigate('/student');
@@ -72,7 +78,7 @@ export default function RegisterPage() {
     setLoading(false);
   }
 
-  const inputClass = "w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-500 transition-all";
+  const inputClass = "w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-500 transition-all";
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -114,7 +120,7 @@ export default function RegisterPage() {
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-10 sm:p-12 overflow-y-auto">
         <motion.div
-          className="w-full max-w-md"
+          className="w-full max-w-lg"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
@@ -129,12 +135,12 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold font-display text-slate-900 mb-3">Create Account</h1>
           <p className="text-slate-500 mb-10">Fill in your details to register</p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-7">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
               <div className="relative">
                 <HiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="text" name="name" value={formData.name} onChange={handleChange} className={inputClass} placeholder="John Doe" required />
+                <input type="text" name="name" value={formData.name} onChange={handleChange} className={inputClass} required />
               </div>
             </div>
 
@@ -142,15 +148,36 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-slate-700 mb-2">Registration Number</label>
               <div className="relative">
                 <HiIdentification className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} className={inputClass} placeholder="21BCE7001" required />
+                <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} placeholder="e.g. 21BCE7890" className={`${inputClass} pl-10`} required />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                CGPA <span className="text-slate-400 font-normal text-xs">(0 – 10)</span>
+              </label>
+              <div className="relative">
+                <HiChartBar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <input
+                  type="number"
+                  name="cgpa"
+                  value={formData.cgpa}
+                  onChange={handleChange}
+                  placeholder="e.g. 8.5"
+                  min="0"
+                  max="10"
+                  step="0.01"
+                  className={`${inputClass} pl-10`}
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Used as priority in course allocation</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
               <div className="relative">
                 <HiEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className={inputClass} placeholder="your.email@vignan.ac.in" required />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} className={inputClass} required />
               </div>
             </div>
 
@@ -170,7 +197,7 @@ export default function RegisterPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Semester</label>
                 <select name="semester" value={formData.semester} onChange={handleChange} className={`${inputClass} pl-4`}>
-                  {[1,2,3,4,5,6,7,8].map((s) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                     <option key={s} value={s}>Semester {s}</option>
                   ))}
                 </select>
@@ -181,7 +208,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
               <div className="relative">
                 <HiLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} className={inputClass} placeholder="Min 6 characters" required />
+                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} className={inputClass} required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {showPassword ? <HiEyeSlash className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
                 </button>
@@ -192,7 +219,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium text-slate-700 mb-2">Confirm Password</label>
               <div className="relative">
                 <HiLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className={inputClass} placeholder="Re-enter password" required />
+                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className={inputClass} required />
               </div>
             </div>
 

@@ -7,7 +7,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import {
   HiAcademicCap, HiHome, HiBookOpen, HiUserGroup, HiCog6Tooth,
   HiArrowRightOnRectangle, HiBars3, HiChartBar, HiCpuChip,
-  HiUsers, HiDocumentText, HiCheckBadge
+  HiUsers, HiDocumentText, HiCheckBadge, HiClock, HiCalendarDays, HiExclamationTriangle
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const isExactDashboard = location.pathname === '/admin';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-navy-950 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
 
       {sidebarOpen && <div className="fixed inset-0 bg-black/20 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-      <div className="flex-1 lg:pl-64">
+      <div className="sidebar-offset">
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -99,7 +99,15 @@ export default function AdminDashboard() {
                 <p className="text-xs text-slate-400">Admin Panel</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLogout}
+                title="Sign Out"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-xl transition-all duration-200"
+              >
+                <HiArrowRightOnRectangle className="w-4 h-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
               <span className="text-xs font-medium text-navy-600 bg-navy-50 px-2.5 py-1 rounded-lg">Admin</span>
               <div className="w-9 h-9 bg-gradient-to-br from-gold-400 to-gold-600 rounded-full flex items-center justify-center text-navy-900 font-semibold text-sm">
                 {userProfile?.name?.charAt(0) || 'A'}
@@ -121,15 +129,17 @@ const CHART_COLORS = ['#2d4aff', '#ffc107', '#10b981', '#f43f5e', '#8b5cf6', '#f
 function AdminOverview() {
   const [stats, setStats] = useState({ students: 0, courses: 0, allocated: 0, unallocated: 0 });
   const [courseData, setCourseData] = useState([]);
+  const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [studentsSnap, coursesSnap, allocSnap] = await Promise.all([
+        const [studentsSnap, coursesSnap, allocSnap, settingsSnap] = await Promise.all([
           getDocs(collection(db, 'users')),
           getDocs(collection(db, 'courses')),
           getDocs(collection(db, 'allocations')),
+          getDoc(doc(db, 'settings', 'general')),
         ]);
 
         const students = studentsSnap.docs.filter(d => d.data().role === 'student');
@@ -139,15 +149,19 @@ function AdminOverview() {
           students: students.length,
           courses: courses.length,
           allocated: allocSnap.size,
-          unallocated: students.length - allocSnap.size,
+          unallocated: Math.max(0, students.length - allocSnap.size),
         });
 
         setCourseData(courses.slice(0, 6).map(c => ({
-          name: c.courseName?.length > 15 ? c.courseName.substring(0, 15) + '..' : c.courseName,
+          name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : (c.courseName || 'Unknown'),
           capacity: c.seatCapacity || 0,
-          remaining: c.remainingSeats ?? c.seatCapacity ?? 0,
           enrolled: (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
         })));
+
+        if (settingsSnap.exists() && settingsSnap.data().preferenceDeadline) {
+          const dl = settingsSnap.data().preferenceDeadline;
+          setDeadline(dl?.seconds ? new Date(dl.seconds * 1000) : new Date(dl));
+        }
       } catch (e) {
         console.error(e);
       }
@@ -168,6 +182,8 @@ function AdminOverview() {
     { name: 'Unallocated', value: stats.unallocated || 0 },
   ];
 
+  const deadlinePast = deadline && deadline < new Date();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -177,26 +193,51 @@ function AdminOverview() {
   }
 
   return (
-    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="space-y-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {/* Deadline Alert */}
+      {deadline && (
+        <div className={`flex items-start gap-3 px-5 py-4 rounded-2xl border ${
+          deadlinePast ? 'bg-rose-50 border-rose-200' : 'bg-blue-50 border-blue-200'
+        }`}>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            deadlinePast ? 'bg-rose-100' : 'bg-blue-100'
+          }`}>
+            {deadlinePast
+              ? <HiExclamationTriangle className="w-4 h-4 text-rose-500" />
+              : <HiClock className="w-4 h-4 text-blue-500" />
+            }
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className={`text-sm font-semibold ${ deadlinePast ? 'text-rose-700' : 'text-blue-700' }`}>
+              Preference Deadline: {deadlinePast ? 'Passed' : 'Active'}
+            </p>
+            <p className={`text-xs mt-0.5 ${ deadlinePast ? 'text-rose-500' : 'text-blue-500' }`}>
+              {deadline.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+          <Link to="/admin/settings" className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+            deadlinePast ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+          }`}>
+            Edit
+          </Link>
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => (
           <motion.div
             key={card.label}
             className="bg-white rounded-2xl border border-slate-200 p-5"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            transition={{ delay: i * 0.08 }}
           >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 ${card.bg} rounded-xl flex items-center justify-center`}>
-                <card.icon className={`w-5 h-5 ${card.color}`} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">{card.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{card.value}</p>
-              </div>
+            <div className={`w-10 h-10 ${card.bg} rounded-xl flex items-center justify-center mb-3`}>
+              <card.icon className={`w-5 h-5 ${card.color}`} />
             </div>
+            <p className="text-2xl font-bold text-slate-900">{card.value}</p>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">{card.label}</p>
           </motion.div>
         ))}
       </div>

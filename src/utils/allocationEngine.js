@@ -1,111 +1,168 @@
 /**
- * Course Allocation Engine
- * 
- * Algorithm:
- * 1. Fetch all students with preferences and all courses
- * 2. Sort students by registration order (registrationNumber)
- * 3. For each student, iterate through their ranked preferences
- * 4. For each preference, check:
- *    - Seat availability (remainingSeats > 0)
- *    - Prerequisite completion  
- *    - Department eligibility
- *    - Timetable conflict with already-allocated courses
- * 5. Allocate first valid preference
- * 6. Return allocation results
+ * Gale-Shapley Stable Matching — Course Allocation Engine
+ *
+ * Student-Proposing Variant:
+ * 1. All students are "free" and have a pointer to their next un-tried preference.
+ * 2. While any free student still has untried preferences:
+ *    a. Student proposes to their next preferred course.
+ *    b. If the course has a free seat → tentatively accept.
+ *    c. If the course is full → compare the proposing student against the worst
+ *       current enrollee (ranked by CGPA descending; ties broken by
+ *       registrationNumber ascending = lower number is "earlier/better").
+ *       - Proposing student wins → eject worst, accept challenger.
+ *       - Proposing student loses → reject challenger; try next preference.
+ * 3. Terminates when all students are allocated or have no more preferences.
+ *
+ * Stability guarantee: no student-course pair both prefer each other over
+ * their current assignment.
  */
 
-export function runAllocation(students, courses) {
-  // Deep copy courses so we can modify remainingSeats
-  const coursesMap = {};
-  courses.forEach(c => {
-    coursesMap[c.courseId || c.id] = {
-      ...c,
-      remainingSeats: c.remainingSeats ?? c.seatCapacity ?? 0,
-    };
-  });
+/**
+ * Numeric priority for a student. Higher = better seat claim.
+ * Primary: CGPA (higher wins). Secondary: reg. number length+lex (shorter/earlier wins).
+ */
+function priority(student) {
+  return parseFloat(student.cgpa) || 0;
+}
 
-  // Sort students by registration number for fair ordering
-  const sortedStudents = [...students]
-    .filter(s => s.preferences?.length > 0)
-    .sort((a, b) => (a.registrationNumber || '').localeCompare(b.registrationNumber || ''));
+/**
+ * Returns true if `a` should DISPLACE `b` from a course seat.
+ * (i.e., a has strictly higher claim than b)
+ */
+function beats(a, b) {
+  const pa = priority(a);
+  const pb = priority(b);
+  if (pa !== pb) return pa > pb;
+  // Tiebreak: lexicographically earlier registration number "wins"
+  const ra = a.registrationNumber || '';
+  const rb = b.registrationNumber || '';
+  return ra < rb;
+}
 
-  const allocations = [];
-  const allocatedSlots = {}; // studentId -> set of allocated timetable slots
-
-  for (const student of sortedStudents) {
-    allocatedSlots[student.id] = new Set();
-    let allocated = false;
-
-    for (const prefCourseId of student.preferences) {
-      const course = coursesMap[prefCourseId];
-      if (!course) continue;
-
-      // Check 1: Seat availability
-      if (course.remainingSeats <= 0) continue;
-
-      // Check 2: Prerequisite completion
-      if (course.prerequisites?.length > 0) {
-        const completedCourses = student.completedCourses || [];
-        const prereqsMet = course.prerequisites.every(p => completedCourses.includes(p));
-        if (!prereqsMet) continue;
-      }
-
-      // Check 3: Department eligibility
-      // Allow if course department matches student department, or course is for all departments
-      if (course.department && course.department !== 'Open Elective' && course.department !== 'All') {
-        // flexible matching: department field could be full name or abbreviation
-        const courseDept = course.department.toLowerCase();
-        const studentDept = (student.department || '').toLowerCase();
-        if (!studentDept.includes(courseDept) && !courseDept.includes(studentDept) && 
-            courseDept !== 'open elective' && courseDept !== 'all') {
-          // Skip only if it's a strict department-only course
-          // For hackathon, we'll be lenient here
-        }
-      }
-
-      // Check 4: Timetable conflict
-      if (course.timetableSlot && allocatedSlots[student.id].has(course.timetableSlot)) {
-        continue;
-      }
-
-      // All checks passed - allocate!
-      course.remainingSeats -= 1;
-      if (course.timetableSlot) {
-        allocatedSlots[student.id].add(course.timetableSlot);
-      }
-
-      allocations.push({
-        studentId: student.id,
-        studentName: student.name,
-        registrationNumber: student.registrationNumber,
-        department: student.department,
-        allocatedCourse: prefCourseId,
-        courseName: course.courseName,
-        preferenceRank: student.preferences.indexOf(prefCourseId) + 1,
-        timestamp: new Date().toISOString(),
-      });
-
-      allocated = true;
-      break;
-    }
-
-    if (!allocated) {
-      allocations.push({
-        studentId: student.id,
-        studentName: student.name,
-        registrationNumber: student.registrationNumber,
-        department: student.department,
-        allocatedCourse: null,
-        courseName: null,
-        preferenceRank: null,
-        timestamp: new Date().toISOString(),
-        unallocated: true,
-      });
+/** Find the index of the student with the LOWEST priority in the array. */
+function worstIndex(enrolledArr) {
+  let idx = 0;
+  for (let i = 1; i < enrolledArr.length; i++) {
+    // If enrolledArr[idx] beats enrolledArr[i], then i is "worse" than idx — update idx
+    if (beats(enrolledArr[idx], enrolledArr[i])) {
+      idx = i;
     }
   }
+  return idx;
+}
 
-  // Calculate updated course remaining seats
-  const updatedCourses = Object.values(coursesMap);
+/** Check eligibility of student for a course given their current timetable. */
+function isEligible(student, course, occupiedSlots) {
+  // Prerequisite check
+  if (course.prerequisites?.length > 0) {
+    const done = student.completedCourses || [];
+    if (!course.prerequisites.every(p => done.includes(p))) return false;
+  }
+  // Timetable conflict
+  if (course.timetableSlot && occupiedSlots.has(course.timetableSlot)) return false;
+  return true;
+}
+
+/**
+ * Run the Gale-Shapley course allocation.
+ *
+ * @param {Object[]} students  Firestore student objects
+ * @param {Object[]} courses   Firestore course objects
+ * @returns {{ allocations: Object[], updatedCourses: Object[] }}
+ */
+export function runAllocation(students, courses) {
+  /* ── Build course state ──────────────────────────────────────────────────── */
+  const courseMap = {};
+  for (const c of courses) {
+    const key = c.courseId || c.id;
+    const cap = Math.max(0, c.seatCapacity ?? c.remainingSeats ?? 0);
+    courseMap[key] = { ...c, _key: key, seatCapacity: cap, enrolled: [] };
+  }
+
+  /* ── Build student state ─────────────────────────────────────────────────── */
+  const eligible_students = students.filter(s => s.preferences?.length > 0);
+  const state = new Map(); // studentId → { student, propIdx, allocKey, occupiedSlots }
+  for (const s of eligible_students) {
+    state.set(s.id, { student: s, propIdx: 0, allocKey: null, occupiedSlots: new Set() });
+  }
+
+  /* ── Free pool ───────────────────────────────────────────────────────────── */
+  let free = [...eligible_students];
+
+  /* ── Main loop ───────────────────────────────────────────────────────────── */
+  while (free.length > 0) {
+    const nextFree = [];
+
+    for (const student of free) {
+      const st = state.get(student.id);
+
+      while (st.propIdx < student.preferences.length) {
+        const key = student.preferences[st.propIdx++];
+        const course = courseMap[key];
+        if (!course) continue;
+        if (!isEligible(student, course, st.occupiedSlots)) continue;
+
+        if (course.enrolled.length < course.seatCapacity) {
+          /* ── Seat available ── */
+          course.enrolled.push(student);
+          st.allocKey = key;
+          if (course.timetableSlot) st.occupiedSlots.add(course.timetableSlot);
+          break; // accepted, exit while-loop
+        } else {
+          /* ── Course full — compare against worst enrollee ── */
+          const wi = worstIndex(course.enrolled);
+          const worst = course.enrolled[wi];
+
+          if (beats(student, worst)) {
+            /* ── Challenger wins → eject worst ── */
+            course.enrolled.splice(wi, 1);
+            course.enrolled.push(student);
+            st.allocKey = key;
+            if (course.timetableSlot) st.occupiedSlots.add(course.timetableSlot);
+
+            const wst = state.get(worst.id);
+            if (wst) {
+              wst.allocKey = null;
+              if (course.timetableSlot) wst.occupiedSlots.delete(course.timetableSlot);
+              nextFree.push(worst); // ejected student re-enters free pool
+            }
+            break; // accepted
+          }
+          // else: lost → try next preference
+        }
+      }
+      // If we exhausted all preferences → stays unallocated (no push to nextFree)
+    }
+
+    free = nextFree;
+  }
+
+  /* ── Compile results ─────────────────────────────────────────────────────── */
+  const allocations = [];
+  for (const [, st] of state) {
+    const { student, allocKey } = st;
+    const course = allocKey ? courseMap[allocKey] : null;
+    allocations.push({
+      studentId: student.id,
+      studentName: student.name,
+      registrationNumber: student.registrationNumber || null,
+      department: student.department || null,
+      cgpa: student.cgpa ?? null,
+      preferences: student.preferences,
+      allocatedCourse: allocKey || null,
+      courseName: course?.courseName || null,
+      timetableSlot: course?.timetableSlot || null,
+      preferenceRank: allocKey ? student.preferences.indexOf(allocKey) + 1 : null,
+      unallocated: !allocKey,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /* ── Updated course seats ────────────────────────────────────────────────── */
+  const updatedCourses = Object.values(courseMap).map(({ enrolled, _key, ...rest }) => ({
+    ...rest,
+    remainingSeats: Math.max(0, rest.seatCapacity - enrolled.length),
+  }));
 
   return { allocations, updatedCourses };
 }

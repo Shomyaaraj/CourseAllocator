@@ -133,7 +133,8 @@ export default function LoginPage() {
             <div className="mb-6 flex items-start gap-2.5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
               <HiShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
               <span>
-                Use your admin account credentials. If you don't have one, ask the system administrator to set your role to <strong>admin</strong> in Firestore.
+                Use your admin credentials below. New to admin?{' '}
+                <Link to="/admin-register" className="font-bold underline underline-offset-2">Register with an invite code.</Link>
               </span>
             </div>
           )}
@@ -195,6 +196,15 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {isAdmin && (
+            <p className="mt-8 text-center text-sm text-slate-500">
+              Don't have an admin account?{' '}
+              <Link to="/admin-register" className="font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+                Register as Admin
+              </Link>
+            </p>
+          )}
 
           {!isAdmin && (
             <p className="mt-8 text-center text-sm text-slate-500">
