@@ -58,7 +58,7 @@ export default function Navbar() {
             </Link>
             <Link
               to="/register"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-linear-to-r from-navy-600 to-navy-700 hover:from-navy-700 hover:to-navy-800 rounded-xl shadow-lg shadow-navy-500/25 hover:shadow-navy-500/40 transition-all"
+              className="px-4 py-2 text-sm font-medium text-navy-700 hover:text-navy-800 hover:bg-navy-50 rounded-lg transition-all"
             >
               Register
             </Link>
