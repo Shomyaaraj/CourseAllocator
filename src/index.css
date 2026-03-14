@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+
+  --color-navy-50: #eef2ff;
+  --color-navy-100: #dde5ff;
+  --color-navy-200: #bccaff;
+  --color-navy-300: #8aa4ff;
+  --color-navy-400: #5573ff;
+  --color-navy-500: #2d4aff;
+  --color-navy-600: #1a2db3;
+  --color-navy-700: #0f1d80;
+  --color-navy-800: #0a1452;
+  --color-navy-900: #060d33;
+  --color-navy-950: #030820;
+
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fff3c4;
+  --color-gold-200: #ffe588;
+  --color-gold-300: #ffd54f;
+  --color-gold-400: #ffc107;
+  --color-gold-500: #f5a623;
+  --color-gold-600: #d48806;
+  --color-gold-700: #a36502;
+  --color-gold-800: #7a4c08;
+  --color-gold-900: #5c3a0a;
+
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+
+  --color-rose-50: #fff1f2;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+}
+
+/* Global Reset */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Body */
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-slate-900);
+  background-color: #ffffff;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  animation: fadeIn 0.4s ease;
+}
+
+/* Headings */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+
+/* Images */
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Smooth UI transitions */
+
+button,
+a {
+  transition: all 0.25s ease;
+}
+
+/* Global smooth interaction */
+
+* {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Text selection */
+
+::selection {
+  background: var(--color-gold-300);
+  color: #000;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-slate-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--color-navy-500),
+      var(--color-navy-700));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(var(--color-navy-600),
+      var(--color-navy-800));
+}
+
+/* Container utility */
+
+.container {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Page fade animation */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
