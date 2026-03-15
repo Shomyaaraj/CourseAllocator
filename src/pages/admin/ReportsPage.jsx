@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -10,7 +10,7 @@ import {
   HiChartBar, HiArrowDownTray, HiExclamationTriangle,
 } from 'react-icons/hi2';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import toast from 'react-hot-toast';
 
 const COLORS = ['#c9a84c', '#1d9e75', '#378add', '#e24b4a', '#7f77dd', '#ba7517', '#d4537e', '#639922'];
@@ -51,6 +51,8 @@ export default function ReportsPage() {
   const [students, setStudents] = useState([]);
   const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -121,65 +123,59 @@ export default function ReportsPage() {
   const unallocatedStudents = allocations.filter(a => !a.allocatedCourse);
   const allocatedCount = allocations.filter(a => a.allocatedCourse).length;
 
-  function exportPDF() {
-    const pdf = new jsPDF();
-    pdf.setFontSize(18);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('VUCA - Course Allocation Report', 14, 22);
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Summary', 14, 42);
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Total Students: ${students.length}`, 14, 50);
-    pdf.text(`Total Courses: ${courses.length}`, 14, 56);
-    pdf.text(`Allocated: ${allocatedCount}`, 14, 62);
-    pdf.text(`Unallocated: ${unallocatedStudents.length}`, 14, 68);
-
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Course Enrollment', 14, 82);
-
-    pdf.autoTable({
-      startY: 86,
-      head: [['Course ID', 'Name', 'Capacity', 'Remaining', 'Enrolled']],
-      body: courses.map(c => [
-        c.courseId,
-        c.courseName,
-        c.seatCapacity,
-        c.remainingSeats ?? c.seatCapacity,
-        (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
-      ]),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [13, 29, 128] },
-    });
-
-    if (allocations.length > 0) {
-      pdf.addPage();
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Student Allocations', 14, 22);
-      pdf.autoTable({
-        startY: 28,
-        head: [['Student', 'Reg No.', 'Department', 'Course', 'Pref Rank']],
-        body: allocations.map(a => [
-          a.studentName,
-          a.registrationNumber,
-          a.department,
-          a.courseName || 'Unallocated',
-          a.preferenceRank || '—',
-        ]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [13, 29, 128] },
+  async function exportPDF() {
+    if (!reportRef.current || exporting) return;
+    setExporting(true);
+    const toastId = toast.loading('Generating PDF…');
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        backgroundColor: '#080d1a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
       });
-    }
 
-    pdf.save('VUCA_Allocation_Report.pdf');
-    toast.success('PDF exported!');
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const headerH = 22;
+
+      // ── Header
+      pdf.setFillColor(8, 13, 26);
+      pdf.rect(0, 0, pageW, pageH, 'F');
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(240, 236, 224);
+      pdf.text('VUCA – Course Allocation Report', margin, 12);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(58, 74, 96);
+      pdf.text(
+        `Generated: ${new Date().toLocaleString()}   |   Students: ${students.length}   |   Courses: ${courses.length}   |   Allocated: ${allocatedCount}   |   Unallocated: ${unallocatedStudents.length}`,
+        margin, 18
+      );
+
+      // ── Charts image
+      const availW = pageW - margin * 2;
+      const availH = pageH - headerH - margin;
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const ratio = Math.min(availW / imgW, availH / imgH);
+      const drawW = imgW * ratio;
+      const drawH = imgH * ratio;
+      const xOff = margin + (availW - drawW) / 2;
+
+      pdf.addImage(imgData, 'PNG', xOff, headerH, drawW, drawH);
+      pdf.save('VUCA_Reports.pdf');
+      toast.success('PDF saved!', { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Export failed — see console.', { id: toastId });
+    } finally {
+      setExporting(false);
+    }
   }
 
   if (loading) {
@@ -223,21 +219,23 @@ export default function ReportsPage() {
         </div>
         <button
           onClick={exportPDF}
+          disabled={exporting}
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '10px 18px',
-            background: '#c9a84c',
+            background: exporting ? 'rgba(201,168,76,0.45)' : '#c9a84c',
             color: '#080d1a',
             fontSize: 13, fontWeight: 700,
             border: 'none', borderRadius: 10,
-            cursor: 'pointer', letterSpacing: '0.02em',
+            cursor: exporting ? 'not-allowed' : 'pointer',
+            letterSpacing: '0.02em',
             transition: 'opacity 0.2s',
           }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+          onMouseEnter={e => { if (!exporting) e.currentTarget.style.opacity = '0.88'; }}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
         >
           <HiArrowDownTray style={{ width: 16, height: 16 }} />
-          Export PDF
+          {exporting ? 'Exporting…' : 'Export PDF'}
         </button>
       </div>
 
@@ -283,7 +281,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Charts Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div ref={reportRef} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
         {/* Course Enrollment */}
         <div style={cardStyle}>
