@@ -6,71 +6,172 @@ import { HiAcademicCap } from 'react-icons/hi2';
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hoveredLink, setHoveredLink] = useState('');
+  const [hoveredLogin, setHoveredLogin] = useState(false);
 
-  const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'Statistics', href: '#stats' },
-    { label: 'About', href: '#about' },
-  ];
+  const linkColor = (name) => hoveredLink === name ? '#c9a84c' : '#6e7e98';
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm shadow-slate-900/5"
-      initial={{ y: -100 }}
+      className="fixed top-0 left-0 right-0 z-50"
+      style={{
+        background: 'rgba(10,15,30,0.96)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(201,168,76,0.15)',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+      initial={{ y: -80 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        <div className="flex items-center justify-between h-20">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68 }}>
+
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-linear-to-br from-navy-600 to-navy-800 rounded-xl flex items-center justify-center shadow-lg shadow-navy-500/20 group-hover:shadow-navy-500/40 transition-shadow">
-              <HiAcademicCap className="w-6 h-6 text-white" />
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <div style={{
+              width: 38,
+              height: 38,
+              background: '#0d1e3d',
+              border: '1px solid rgba(201,168,76,0.3)',
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <HiAcademicCap style={{ width: 20, height: 20, color: '#c9a84c' }} />
             </div>
+
             <div>
-              <span className="text-xl font-bold font-display bg-linear-to-r from-navy-700 to-navy-500 bg-clip-text text-transparent">
+              <div style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#c9a84c',
+                letterSpacing: '0.05em',
+                lineHeight: 1.1,
+              }}>
                 VUCA
-              </span>
-              <p className="text-[10px] text-slate-400 leading-none -mt-0.5">Course Allocation</p>
+              </div>
+
+              <div style={{
+                fontSize: 10,
+                color: '#3a4a60',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                marginTop: 1,
+              }}>
+                Course Allocation
+              </div>
             </div>
           </Link>
 
-          {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm font-medium text-slate-600 hover:text-navy-700 relative after:absolute after:left-0 after:-bottom-1 after:w-0 after:h-[2px] after:bg-navy-600 hover:after:w-full after:transition-all"
-              >
-                {link.label}
-              </a>
-            ))}
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex" style={{ gap: 32, alignItems: 'center' }}>
+
+            <a
+              href="#features"
+              style={{
+                fontSize: 13,
+                color: linkColor('Features'),
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={() => setHoveredLink('Features')}
+              onMouseLeave={() => setHoveredLink('')}
+            >
+              Features
+            </a>
+
+            <a
+              href="#stats"
+              style={{
+                fontSize: 13,
+                color: linkColor('Statistics'),
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={() => setHoveredLink('Statistics')}
+              onMouseLeave={() => setHoveredLink('')}
+            >
+              Statistics
+            </a>
+
+            <a
+              href="#about"
+              style={{
+                fontSize: 13,
+                color: linkColor('About'),
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={() => setHoveredLink('About')}
+              onMouseLeave={() => setHoveredLink('')}
+            >
+              About
+            </a>
+
           </div>
 
           {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex" style={{ gap: 8, alignItems: 'center' }}>
+
             <Link
               to="/login"
-              className="px-4 py-2 text-sm font-medium text-navy-700 hover:text-navy-800 hover:bg-navy-50 rounded-lg transition-all"
+              style={{
+                padding: '7px 16px',
+                fontSize: 13,
+                color: hoveredLogin ? '#e8e2d0' : '#8a94a8',
+                border: hoveredLogin ? '1px solid rgba(201,168,76,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8,
+                background: 'transparent',
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                display: 'inline-block',
+              }}
+              onMouseEnter={() => setHoveredLogin(true)}
+              onMouseLeave={() => setHoveredLogin(false)}
             >
               Log In
             </Link>
+
             <Link
               to="/register"
-              className="px-4 py-2 text-sm font-medium text-navy-700 hover:text-navy-800 hover:bg-navy-50 rounded-lg transition-all"
+              style={{
+                padding: '7px 16px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#0a0f1e',
+                background: '#c9a84c',
+                borderRadius: 8,
+                textDecoration: 'none',
+                letterSpacing: '0.02em',
+                display: 'inline-block',
+              }}
             >
               Register
             </Link>
+
           </div>
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile Toggle */}
           <button
-            className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            className="md:hidden"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6e7e98',
+              cursor: 'pointer',
+              padding: 6
+            }}
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            {mobileOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
           </button>
+
         </div>
       </div>
 
@@ -78,43 +179,91 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            className="md:hidden bg-white border-t border-slate-100"
+            className="md:hidden overflow-hidden"
+            style={{
+              background: '#0d1425',
+              borderTop: '1px solid rgba(201,168,76,0.1)'
+            }}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
           >
-            <div className="px-4 py-4 space-y-3">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="block px-3 py-2 text-sm font-medium text-slate-600 hover:text-navy-600 hover:bg-navy-50 rounded-lg transition-colors"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+              <a
+                href="#features"
+                style={{ padding: '10px 12px', fontSize: 13, color: '#6e7e98', textDecoration: 'none', borderRadius: 8 }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Features
+              </a>
+
+              <a
+                href="#stats"
+                style={{ padding: '10px 12px', fontSize: 13, color: '#6e7e98', textDecoration: 'none', borderRadius: 8 }}
+                onClick={() => setMobileOpen(false)}
+              >
+                Statistics
+              </a>
+
+              <a
+                href="#about"
+                style={{ padding: '10px 12px', fontSize: 13, color: '#6e7e98', textDecoration: 'none', borderRadius: 8 }}
+                onClick={() => setMobileOpen(false)}
+              >
+                About
+              </a>
+
+              <div style={{
+                paddingTop: 12,
+                marginTop: 8,
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}>
+
                 <Link
                   to="/login"
-                  className="w-full text-center px-4 py-2.5 text-sm font-medium text-navy-700 border border-navy-200 rounded-xl hover:bg-navy-50 transition-colors"
+                  style={{
+                    textAlign: 'center',
+                    padding: '10px',
+                    fontSize: 13,
+                    color: '#8a94a8',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 8,
+                    textDecoration: 'none',
+                  }}
                   onClick={() => setMobileOpen(false)}
                 >
                   Log In
                 </Link>
+
                 <Link
                   to="/register"
-                  className="w-full text-center px-4 py-2.5 text-sm font-semibold text-white bg-linear-to-r from-navy-600 to-navy-700 rounded-xl shadow-lg transition-all"
+                  style={{
+                    textAlign: 'center',
+                    padding: '10px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#0a0f1e',
+                    background: '#c9a84c',
+                    borderRadius: 8,
+                    textDecoration: 'none',
+                  }}
                   onClick={() => setMobileOpen(false)}
                 >
                   Register
                 </Link>
+
               </div>
+
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
     </motion.nav>
   );
 }

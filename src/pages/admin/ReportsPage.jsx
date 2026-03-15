@@ -2,13 +2,49 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from 'recharts';
-import { HiChartBar, HiArrowDownTray, HiUserGroup, HiExclamationTriangle } from 'react-icons/hi2';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, CartesianGrid, Legend,
+} from 'recharts';
+import {
+  HiChartBar, HiArrowDownTray, HiExclamationTriangle,
+} from 'react-icons/hi2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import toast from 'react-hot-toast';
 
-const COLORS = ['#2d4aff', '#ffc107', '#10b981', '#f43f5e', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899'];
+const COLORS = ['#c9a84c', '#1d9e75', '#378add', '#e24b4a', '#7f77dd', '#ba7517', '#d4537e', '#639922'];
+
+const cardStyle = {
+  background: '#0d1425',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 14,
+  overflow: 'hidden',
+};
+
+const chartHeaderStyle = {
+  display: 'flex', alignItems: 'center', gap: 8,
+  padding: '16px 20px',
+  borderBottom: '1px solid rgba(255,255,255,0.04)',
+};
+
+const chartTitleStyle = {
+  fontFamily: "'Playfair Display', Georgia, serif",
+  fontSize: 15, fontWeight: 700, color: '#e8e2d0',
+};
+
+const tooltipStyle = {
+  contentStyle: {
+    background: '#0d1425',
+    border: '1px solid rgba(201,168,76,0.15)',
+    borderRadius: 8,
+    color: '#e8e2d0',
+    fontSize: 12,
+  },
+  cursor: { fill: 'rgba(255,255,255,0.03)' },
+};
+
+const axisStyle = { fontSize: 10, fill: '#3a4a60' };
 
 export default function ReportsPage() {
   const [courses, setCourses] = useState([]);
@@ -25,7 +61,11 @@ export default function ReportsPage() {
           getDocs(collection(db, 'allocations')),
         ]);
         setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setStudents(studentsSnap.docs.filter(d => d.data().role === 'student').map(d => ({ id: d.id, ...d.data() })));
+        setStudents(
+          studentsSnap.docs
+            .filter(d => d.data().role === 'student')
+            .map(d => ({ id: d.id, ...d.data() }))
+        );
         setAllocations(allocSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (e) { console.error(e); }
       setLoading(false);
@@ -33,53 +73,53 @@ export default function ReportsPage() {
     fetchData();
   }, []);
 
-  // Course enrollment data
   const enrollmentData = courses.map(c => ({
     name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : c.courseName,
     fullName: c.courseName,
     capacity: c.seatCapacity || 0,
     enrolled: (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
-    remaining: c.remainingSeats ?? c.seatCapacity ?? 0,
   }));
 
-  // Seat utilization  
   const utilizationData = courses.map(c => {
     const cap = c.seatCapacity || 1;
     const enrolled = cap - (c.remainingSeats ?? cap);
     return {
-      name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : c.courseName,
+      name: c.courseName?.length > 14 ? c.courseName.substring(0, 14) + '..' : c.courseName,
       utilization: Math.round((enrolled / cap) * 100),
     };
   });
 
-  // Course popularity (by preference count)
   const popularityMap = {};
   students.forEach(s => {
     (s.preferences || []).forEach((pref, idx) => {
       if (!popularityMap[pref]) popularityMap[pref] = { votes: 0, weightedScore: 0 };
       popularityMap[pref].votes += 1;
-      popularityMap[pref].weightedScore += (6 - idx); // higher rank = more weight
+      popularityMap[pref].weightedScore += (6 - idx);
     });
   });
   const popularityData = Object.entries(popularityMap).map(([courseId, data]) => {
     const course = courses.find(c => (c.courseId || c.id) === courseId);
     return {
-      name: course?.courseName?.length > 12 ? course?.courseName?.substring(0, 12) + '..' : (course?.courseName || courseId),
+      name: course?.courseName?.length > 12
+        ? course?.courseName?.substring(0, 12) + '..'
+        : (course?.courseName || courseId),
       votes: data.votes,
       score: data.weightedScore,
     };
   }).sort((a, b) => b.score - a.score).slice(0, 8);
 
-  // Department distribution
   const deptMap = {};
   students.forEach(s => {
     const dept = s.department || 'Unknown';
     deptMap[dept] = (deptMap[dept] || 0) + 1;
   });
-  const deptData = Object.entries(deptMap).map(([name, value]) => ({ name: name.length > 15 ? name.substring(0, 15) + '..' : name, value }));
+  const deptData = Object.entries(deptMap).map(([name, value]) => ({
+    name: name.length > 15 ? name.substring(0, 15) + '..' : name,
+    value,
+  }));
 
-  // Unallocated students
   const unallocatedStudents = allocations.filter(a => !a.allocatedCourse);
+  const allocatedCount = allocations.filter(a => a.allocatedCourse).length;
 
   function exportPDF() {
     const pdf = new jsPDF();
@@ -90,7 +130,6 @@ export default function ReportsPage() {
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
 
-    // Summary
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Summary', 14, 42);
@@ -98,37 +137,32 @@ export default function ReportsPage() {
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Total Students: ${students.length}`, 14, 50);
     pdf.text(`Total Courses: ${courses.length}`, 14, 56);
-    pdf.text(`Allocated: ${allocations.filter(a => a.allocatedCourse).length}`, 14, 62);
+    pdf.text(`Allocated: ${allocatedCount}`, 14, 62);
     pdf.text(`Unallocated: ${unallocatedStudents.length}`, 14, 68);
 
-    // Course table
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Course Enrollment', 14, 82);
 
-    const tableData = courses.map(c => [
-      c.courseId,
-      c.courseName,
-      c.seatCapacity,
-      c.remainingSeats ?? c.seatCapacity,
-      (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
-    ]);
-
     pdf.autoTable({
       startY: 86,
       head: [['Course ID', 'Name', 'Capacity', 'Remaining', 'Enrolled']],
-      body: tableData,
+      body: courses.map(c => [
+        c.courseId,
+        c.courseName,
+        c.seatCapacity,
+        c.remainingSeats ?? c.seatCapacity,
+        (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
+      ]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [13, 29, 128] },
     });
 
-    // Allocations table
     if (allocations.length > 0) {
       pdf.addPage();
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.text('Student Allocations', 14, 22);
-
       pdf.autoTable({
         startY: 28,
         head: [['Student', 'Reg No.', 'Department', 'Course', 'Pref Rank']],
@@ -149,116 +183,305 @@ export default function ReportsPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><div className="w-10 h-10 border-4 border-navy-500 border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+        <div style={{
+          width: 36, height: 36,
+          border: '3px solid rgba(201,168,76,0.15)',
+          borderTopColor: '#c9a84c',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
   return (
-    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="flex items-center justify-between">
+    <motion.div
+      style={{ fontFamily: "'DM Sans', sans-serif", display: 'flex', flexDirection: 'column', gap: 20 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Page Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="text-lg font-semibold font-display text-slate-900">Reports & Analytics</h2>
-          <p className="text-sm text-slate-400">Comprehensive system analytics</p>
+          <h2 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 22, fontWeight: 700, color: '#f0ece0', margin: '0 0 4px',
+          }}>
+            Reports & Analytics
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 32, height: 2, background: '#c9a84c' }} />
+            <p style={{ fontSize: 13, color: '#3a4a60', margin: 0 }}>
+              Comprehensive system analytics
+            </p>
+          </div>
         </div>
         <button
           onClick={exportPDF}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-navy-600 to-navy-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-navy-500/25 transition-all"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7,
+            padding: '10px 18px',
+            background: '#c9a84c',
+            color: '#080d1a',
+            fontSize: 13, fontWeight: 700,
+            border: 'none', borderRadius: 10,
+            cursor: 'pointer', letterSpacing: '0.02em',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
         >
-          <HiArrowDownTray className="w-4 h-4" /> Export PDF
+          <HiArrowDownTray style={{ width: 16, height: 16 }} />
+          Export PDF
         </button>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enrollment */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold font-display text-slate-900 mb-4">Course Enrollment</h3>
-          {enrollmentData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={enrollmentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="capacity" fill="#e2e8f0" name="Capacity" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="enrolled" fill="#2d4aff" name="Enrolled" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-slate-400 text-center py-12">No data</p>}
+      {/* ── Summary Strip ── */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 1, background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 14, overflow: 'hidden',
+      }}>
+        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#c9a84c', lineHeight: 1 }}>
+            {students.length}
+          </div>
+          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+            Students
+          </div>
         </div>
-
-        {/* Seat Utilization */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold font-display text-slate-900 mb-4">Seat Utilization (%)</h3>
-          {utilizationData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={utilizationData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={90} />
-                <Tooltip />
-                <Bar dataKey="utilization" fill="#10b981" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-slate-400 text-center py-12">No data</p>}
+        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#c9a84c', lineHeight: 1 }}>
+            {courses.length}
+          </div>
+          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+            Courses
+          </div>
         </div>
-
-        {/* Popularity */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold font-display text-slate-900 mb-4">Course Popularity</h3>
-          {popularityData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={popularityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="votes" fill="#8b5cf6" name="Preferences" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="score" fill="#ffc107" name="Weighted Score" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-slate-400 text-center py-12">No preferences data</p>}
+        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#1d9e75', lineHeight: 1 }}>
+            {allocatedCount}
+          </div>
+          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+            Allocated
+          </div>
         </div>
-
-        {/* Department Distribution */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold font-display text-slate-900 mb-4">Student Distribution by Dept</h3>
-          {deptData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={deptData} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {deptData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-slate-400 text-center py-12">No data</p>}
+        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: unallocatedStudents.length > 0 ? '#e24b4a' : '#3a4a60', lineHeight: 1 }}>
+            {unallocatedStudents.length}
+          </div>
+          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+            Unallocated
+          </div>
         </div>
       </div>
 
-      {/* Unallocated Students */}
-      {unallocatedStudents.length > 0 && (
-        <div className="bg-white rounded-2xl border border-rose-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <HiExclamationTriangle className="w-5 h-5 text-rose-500" />
-            <h3 className="text-base font-semibold font-display text-rose-900">Unallocated Students ({unallocatedStudents.length})</h3>
+      {/* ── Charts Grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+        {/* Course Enrollment */}
+        <div style={cardStyle}>
+          <div style={chartHeaderStyle}>
+            <HiChartBar style={{ width: 15, height: 15, color: '#c9a84c' }} />
+            <span style={chartTitleStyle}>Course Enrollment</span>
           </div>
-          <div className="space-y-2">
+          <div style={{ padding: '16px 8px 16px 0' }}>
+            {enrollmentData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={enrollmentData} margin={{ left: -10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11, color: '#3a4a60', paddingTop: 8 }}
+                  />
+                  <Bar dataKey="capacity" fill="rgba(255,255,255,0.07)" radius={[4, 4, 0, 0]} name="Capacity" />
+                  <Bar dataKey="enrolled" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Enrolled" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+            )}
+          </div>
+        </div>
+
+        {/* Seat Utilization */}
+        <div style={cardStyle}>
+          <div style={chartHeaderStyle}>
+            <HiChartBar style={{ width: 15, height: 15, color: '#1d9e75' }} />
+            <span style={chartTitleStyle}>Seat Utilization (%)</span>
+          </div>
+          <div style={{ padding: '16px 8px 16px 0' }}>
+            {utilizationData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={utilizationData} layout="vertical" margin={{ left: 0, right: 16 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis type="number" domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={axisStyle} width={100} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="utilization" fill="#1d9e75" radius={[0, 4, 4, 0]} name="Utilization %" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+            )}
+          </div>
+        </div>
+
+        {/* Course Popularity */}
+        <div style={cardStyle}>
+          <div style={chartHeaderStyle}>
+            <HiChartBar style={{ width: 15, height: 15, color: '#7f77dd' }} />
+            <span style={chartTitleStyle}>Course Popularity</span>
+          </div>
+          <div style={{ padding: '16px 8px 16px 0' }}>
+            {popularityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={popularityData} margin={{ left: -10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#3a4a60', paddingTop: 8 }} />
+                  <Bar dataKey="votes" fill="#7f77dd" radius={[4, 4, 0, 0]} name="Preferences" />
+                  <Bar dataKey="score" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Weighted Score" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No preferences data</div>
+            )}
+          </div>
+        </div>
+
+        {/* Department Distribution */}
+        <div style={cardStyle}>
+          <div style={chartHeaderStyle}>
+            <HiChartBar style={{ width: 15, height: 15, color: '#378add' }} />
+            <span style={chartTitleStyle}>Student Distribution by Dept</span>
+          </div>
+          <div style={{ padding: '8px 0 16px' }}>
+            {deptData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={deptData}
+                      cx="50%" cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {deptData.map((entry, i) => (
+                        <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip {...tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Dept legend */}
+                <div style={{
+                  display: 'flex', flexWrap: 'wrap', gap: '6px 16px',
+                  padding: '4px 20px 0',
+                }}>
+                  {deptData.map((d, i) => (
+                    <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: 3, flexShrink: 0,
+                        background: COLORS[i % COLORS.length],
+                      }} />
+                      <span style={{ fontSize: 11, color: '#3a4a60' }}>
+                        {d.name}
+                        <span style={{ color: COLORS[i % COLORS.length], fontWeight: 700, marginLeft: 4 }}>
+                          {d.value}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── Unallocated Students ── */}
+      {unallocatedStudents.length > 0 && (
+        <div style={{
+          background: '#0d1425',
+          border: '1px solid rgba(226,75,74,0.2)',
+          borderRadius: 14, overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '16px 20px',
+            background: 'rgba(226,75,74,0.06)',
+            borderBottom: '1px solid rgba(226,75,74,0.1)',
+          }}>
+            <HiExclamationTriangle style={{ width: 16, height: 16, color: '#e24b4a' }} />
+            <span style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 15, fontWeight: 700, color: '#e24b4a',
+            }}>
+              Unallocated Students
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 600,
+              background: 'rgba(226,75,74,0.12)',
+              border: '1px solid rgba(226,75,74,0.2)',
+              color: '#e24b4a',
+              padding: '2px 8px', borderRadius: 100,
+            }}>
+              {unallocatedStudents.length}
+            </span>
+          </div>
+
+          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {unallocatedStudents.map((s, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-rose-50 rounded-xl">
-                <div className="w-8 h-8 bg-rose-200 rounded-lg flex items-center justify-center text-xs font-bold text-rose-700">
+              <div
+                key={i}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px',
+                  background: 'rgba(226,75,74,0.04)',
+                  border: '1px solid rgba(226,75,74,0.1)',
+                  borderRadius: 10,
+                }}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                  background: 'rgba(226,75,74,0.12)',
+                  border: '1px solid rgba(226,75,74,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 12, fontWeight: 700, color: '#e24b4a',
+                }}>
                   {s.studentName?.charAt(0)}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-rose-900">{s.studentName}</p>
-                  <p className="text-xs text-rose-500">{s.registrationNumber} • {s.department}</p>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e2d0' }}>
+                    {s.studentName}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#3a4a60', marginTop: 1 }}>
+                    {s.registrationNumber} · {s.department}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
     </motion.div>
   );
 }

@@ -1,7 +1,7 @@
 import { HiAcademicCap, HiArrowRight } from 'react-icons/hi2';
-import { FiGithub, FiMail, FiTwitter, FiLinkedin } from 'react-icons/fi';
+import { FiGithub, FiMail, FiLinkedin } from 'react-icons/fi';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -16,135 +16,141 @@ export default function Footer() {
     }
   };
 
-  return (
-    <footer id="about" className="bg-linear-to-b from-slate-950 via-navy-950 to-slate-950 text-white py-24 sm:py-32 lg:py-40 border-t border-white/5 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-navy-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/2 translate-x-1/2 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl" />
-      </div>
+  const colTitleStyle = {
+    fontSize: 11, fontWeight: 600, color: '#c9a84c',
+    letterSpacing: '0.12em', textTransform: 'uppercase',
+    marginBottom: 20, paddingBottom: 10,
+    borderBottom: '1px solid rgba(201,168,76,0.15)',
+  };
 
-      <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 sm:gap-10 lg:gap-12 mb-16">
+  const linkStyle = {
+    display: 'block', fontSize: 13, color: '#3a4a60',
+    textDecoration: 'none', marginBottom: 10, transition: 'color 0.2s',
+  };
+
+  return (
+    <footer
+      id="about"
+      style={{
+        background: '#060a14',
+        borderTop: '1px solid rgba(201,168,76,0.12)',
+        padding: '64px 0 36px',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 32px' }}>
+
+        {/* Main Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.8fr 1fr 1fr 1.6fr',
+          gap: 48, marginBottom: 48,
+        }}>
+
           {/* Brand */}
-          <div className="sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-linear-to-br from-navy-400 to-navy-600 rounded-xl flex items-center justify-center shadow-lg shadow-navy-500/30">
-                <HiAcademicCap className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold font-display bg-linear-to-r from-gold-300 to-gold-400 bg-clip-text text-transparent">VUCA</span>
-            </div>
-            <p className="text-sm text-slate-300 leading-relaxed mb-6 max-w-xs">
-              Smart course allocation system for Vignan University. Making course registration fair, transparent, and efficient.
+          <div>
+            <div style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 22, color: '#c9a84c', fontWeight: 700, marginBottom: 4,
+            }}>VUCA</div>
+            <div style={{
+              fontSize: 11, color: '#3a4a60',
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16,
+            }}>Vignan University</div>
+            <p style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.7, maxWidth: 240 }}>
+              Smart course allocation system for Vignan University. Making course
+              registration fair, transparent, and efficient.
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Navigate */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white mb-6 flex items-center gap-2">
-              <div className="w-1 h-4 bg-linear-to-b from-gold-400 to-gold-600 rounded-full" />
-              Navigate
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { label: 'Features', href: '#features' },
-                { label: 'Statistics', href: '#stats' },
-                { label: 'About', href: '#about' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-slate-400 hover:text-gold-300 flex items-center gap-1 transition-all duration-300 group"
-                  >
-                    <span className="w-0 group-hover:w-4 h-px bg-gold-400 transition-all duration-300" />
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div style={colTitleStyle}>Navigate</div>
+            {[{ label: 'Features', href: '#features' }, { label: 'Statistics', href: '#stats' }, { label: 'About', href: '#about' }].map(l => (
+              <a key={l.label} href={l.href} style={linkStyle}
+                onMouseEnter={e => e.target.style.color = '#c9a84c'}
+                onMouseLeave={e => e.target.style.color = '#3a4a60'}
+              >{l.label}</a>
+            ))}
           </div>
 
-          {/* Auth Links */}
+          {/* Access */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white mb-6 flex items-center gap-2">
-              <div className="w-1 h-4 bg-linear-to-b from-gold-400 to-gold-600 rounded-full" />
-              Access
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { label: 'Log In', href: '/login' },
-                { label: 'Register', href: '/register' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-slate-400 hover:text-gold-300 flex items-center gap-1 transition-all duration-300 group"
-                  >
-                    <span className="w-0 group-hover:w-4 h-px bg-gold-400 transition-all duration-300" />
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div style={colTitleStyle}>Access</div>
+            {[{ label: 'Log In', to: '/login' }, { label: 'Register', to: '/register' }].map(l => (
+              <Link key={l.label} to={l.to} style={linkStyle}
+                onMouseEnter={e => e.target.style.color = '#c9a84c'}
+                onMouseLeave={e => e.target.style.color = '#3a4a60'}
+              >{l.label}</Link>
+            ))}
           </div>
 
-          {/* Newsletter */}
-          <div className="lg:col-span-1">
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white mb-6 flex items-center gap-2">
-              <div className="w-1 h-4 bg-linear-to-b from-gold-400 to-gold-600 rounded-full" />
-              Updates
-            </h4>
-            <form onSubmit={handleSubscribe} className="space-y-3">
-              <div className="relative">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Your email"
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-gold-400/50 focus:bg-white/10 transition-all duration-300"
-                  required
-                />
-              </div>
-              <motion.button
+          {/* Updates */}
+          <div>
+            <div style={colTitleStyle}>Updates</div>
+            <form onSubmit={handleSubscribe}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Your email address"
+                required
+                style={{
+                  width: '100%', padding: '9px 14px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 8, color: '#e8e2d0',
+                  fontSize: 13, outline: 'none', marginBottom: 8,
+                  boxSizing: 'border-box',
+                }}
+                onFocus={e => e.target.style.borderColor = 'rgba(201,168,76,0.35)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
+              />
+              <button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full px-4 py-2.5 bg-linear-to-r from-gold-400 to-gold-500 hover:from-gold-500 hover:to-gold-600 text-slate-900 text-sm font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                style={{
+                  width: '100%', padding: '9px',
+                  background: subscribed ? 'rgba(201,168,76,0.15)' : '#c9a84c',
+                  color: subscribed ? '#c9a84c' : '#0a0f1e',
+                  fontSize: 13, fontWeight: 600,
+                  border: subscribed ? '1px solid rgba(201,168,76,0.3)' : 'none',
+                  borderRadius: 8, cursor: 'pointer', letterSpacing: '0.02em',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
               >
-                <span>{subscribed ? 'Subscribed!' : 'Subscribe'}</span>
-                {!subscribed && <HiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-              </motion.button>
+                {subscribed ? 'Subscribed!' : <><span>Subscribe</span><HiArrowRight style={{ width: 14, height: 14 }} /></>}
+              </button>
             </form>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent my-12" />
-
-        {/* Bottom Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <p className="text-sm text-slate-500">
+        {/* Bottom bar */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          paddingTop: 28, borderTop: '1px solid rgba(255,255,255,0.04)',
+          flexWrap: 'wrap', gap: 16,
+        }}>
+          <span style={{ fontSize: 12, color: '#1e2a3a' }}>
             © {new Date().getFullYear()} VUCA – Vignan University. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4">
-            {[
-              { icon: FiMail, href: 'mailto:admin@vignan.ac.in', label: 'Email' },
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[{ icon: FiMail, href: 'mailto:admin@vignan.ac.in', label: 'Email' },
               { icon: FiGithub, href: '#', label: 'GitHub' },
-              { icon: FiLinkedin, href: '#', label: 'LinkedIn' },
-            ].map(({ icon: Icon, href, label }) => (
-              <motion.a
-                key={label}
-                href={href}
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-gold-300 hover:bg-gold-400/10 hover:border-gold-400/30 transition-all duration-300"
-                title={label}
+              { icon: FiLinkedin, href: '#', label: 'LinkedIn' }].map(({ icon: Icon, href, label }) => (
+              <a key={label} href={href} title={label} style={{
+                width: 34, height: 34, border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#3a4a60', textDecoration: 'none', transition: 'all 0.2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'; e.currentTarget.style.color = '#c9a84c'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#3a4a60'; }}
               >
-                <Icon className="w-4 h-4" />
-              </motion.a>
+                <Icon size={14} />
+              </a>
             ))}
           </div>
         </div>
+
       </div>
     </footer>
   );

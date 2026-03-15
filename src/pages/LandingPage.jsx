@@ -6,7 +6,7 @@ import Footer from '../components/landing/Footer';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div style={{ minHeight: '100vh', background: '#080d1a', overflowX: 'hidden' }}>
       <Navbar />
       <HeroSection />
       <FeaturesSection />

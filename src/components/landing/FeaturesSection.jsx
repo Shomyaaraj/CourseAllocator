@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion';
-import { useInView } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { HiCpuChip, HiChartBar, HiShieldCheck, HiClock, HiUserGroup, HiBell } from 'react-icons/hi2';
 
@@ -7,68 +6,118 @@ const features = [
   {
     icon: HiCpuChip,
     title: 'Smart Allocation',
-    description: 'AI-powered course allocation engine that considers preferences, prerequisites, and availability.',
-    gradient: 'from-blue-500 to-cyan-500',
-    shadow: 'shadow-blue-500/20',
+    description: 'AI-powered allocation engine that considers student preferences, prerequisites, and seat availability simultaneously.',
+    iconBg: 'rgba(55,138,221,0.12)',
+    iconColor: '#378add',
+    num: '01',
   },
   {
     icon: HiChartBar,
     title: 'Real-time Analytics',
     description: 'Comprehensive dashboards with enrollment statistics, seat utilization, and course popularity insights.',
-    gradient: 'from-purple-500 to-pink-500',
-    shadow: 'shadow-purple-500/20',
+    iconBg: 'rgba(100,153,34,0.12)',
+    iconColor: '#639922',
+    num: '02',
   },
   {
     icon: HiShieldCheck,
     title: 'Fair Distribution',
-    description: 'Transparent algorithm ensuring equitable course distribution across all eligible students.',
-    gradient: 'from-emerald-500 to-teal-500',
-    shadow: 'shadow-emerald-500/20',
+    description: 'Transparent algorithm ensuring equitable course distribution across all eligible students without bias.',
+    iconBg: 'rgba(29,158,117,0.12)',
+    iconColor: '#1d9e75',
+    num: '03',
   },
   {
     icon: HiClock,
     title: 'Deadline Management',
     description: 'Built-in countdown timers and automated deadline enforcement for preference submissions.',
-    gradient: 'from-orange-500 to-amber-500',
-    shadow: 'shadow-orange-500/20',
+    iconBg: 'rgba(186,117,23,0.12)',
+    iconColor: '#ba7517',
+    num: '04',
   },
   {
     icon: HiUserGroup,
     title: 'Role-based Access',
-    description: 'Separate interfaces for students and administrators with secure authentication.',
-    gradient: 'from-rose-500 to-red-500',
-    shadow: 'shadow-rose-500/20',
+    description: 'Separate secure interfaces for students and administrators with fine-grained permission controls.',
+    iconBg: 'rgba(127,119,221,0.12)',
+    iconColor: '#7f77dd',
+    num: '05',
   },
   {
     icon: HiBell,
     title: 'Instant Notifications',
-    description: 'Get notified when allocation results are released, with detailed course assignment information.',
-    gradient: 'from-indigo-500 to-violet-500',
-    shadow: 'shadow-indigo-500/20',
+    description: 'Get notified when allocation results are released, with detailed course assignment breakdowns.',
+    iconBg: 'rgba(212,83,126,0.12)',
+    iconColor: '#d4537e',
+    num: '06',
   },
 ];
 
-function FeatureCard({ feature, index }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
-
+function FeatureCard({ feature, index, isInView }) {
   return (
     <motion.div
-      ref={ref}
-      className="group relative bg-white rounded-2xl p-7 sm:p-8 border border-slate-200/80 hover:border-gold-300/50 shadow-sm hover:shadow-2xl hover:shadow-gold-400/15 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
+      style={{ position: 'relative', background: '#0d1425', cursor: 'default' }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = '#111c35';
+        e.currentTarget.querySelector('.accent-bar').style.height = '100%';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = '#0d1425';
+        e.currentTarget.querySelector('.accent-bar').style.height = '0%';
+      }}
     >
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-linear-to-br from-gold-400/5 via-transparent to-gold-500/5 pointer-events-none" />
-      
-      <div className="relative z-10">
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} ${feature.shadow} shadow-lg flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-          <feature.icon className="w-6 h-6 text-white" />
+      {/* Gold left accent bar */}
+      <div
+        className="accent-bar"
+        style={{
+          position: 'absolute', top: 0, left: 0,
+          width: 3, height: '0%',
+          background: '#c9a84c',
+          borderRadius: '0 0 3px 0',
+          transition: 'height 0.35s ease',
+        }}
+      />
+
+      {/* Card number */}
+      <span style={{
+        position: 'absolute', top: 28, right: 24,
+        fontSize: 11, fontWeight: 600,
+        letterSpacing: '0.1em', color: 'rgba(255,255,255,0.1)',
+      }}>
+        {feature.num}
+      </span>
+
+      <div style={{ padding: '32px 28px' }}>
+        {/* Icon */}
+        <div style={{
+          width: 46, height: 46,
+          background: feature.iconBg,
+          borderRadius: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 18,
+        }}>
+          <feature.icon style={{ width: 22, height: 22, color: feature.iconColor }} />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 font-display mb-3 group-hover:text-slate-950 transition-colors">{feature.title}</h3>
-        <p className="text-sm text-slate-500 leading-relaxed group-hover:text-slate-600 transition-colors">{feature.description}</p>
+
+        {/* Title */}
+        <h3 style={{
+          fontSize: 15, fontWeight: 600,
+          color: '#e8e2d0', margin: '0 0 10px',
+          letterSpacing: '-0.01em',
+        }}>
+          {feature.title}
+        </h3>
+
+        {/* Description */}
+        <p style={{
+          fontSize: 13, color: '#5e6d85',
+          lineHeight: 1.65, margin: 0,
+        }}>
+          {feature.description}
+        </p>
       </div>
     </motion.div>
   );
@@ -76,40 +125,145 @@ function FeatureCard({ feature, index }) {
 
 export default function FeaturesSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
-    <section id="features" className="py-32 sm:py-40 lg:py-48 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold-200/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-1/2 translate-x-1/2 w-80 h-80 bg-navy-200/5 rounded-full blur-3xl" />
-      </div>
-      
-      <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+    <section
+      id="features"
+      style={{
+        background: '#0a0f1e',
+        backgroundImage: `
+          linear-gradient(rgba(180,160,100,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(180,160,100,0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: '48px 48px',
+        padding: '88px 0',
+        fontFamily: "'DM Sans', sans-serif",
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Ambient glow */}
+      <div style={{
+        position: 'absolute', top: '20%', left: '50%',
+        transform: 'translateX(-50%)',
+        width: 600, height: 400,
+        background: 'radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 32px', position: 'relative', zIndex: 2 }}>
+
+        {/* Section header */}
         <motion.div
           ref={ref}
-          className="text-center mb-20 lg:mb-28"
+          style={{ marginBottom: 52 }}
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
-          <span className="inline-block px-4 py-1.5 bg-linear-to-r from-navy-50 to-gold-50 text-navy-700 text-sm font-semibold rounded-full mb-4 border border-navy-200/40 shadow-sm shadow-navy-500/5">
-            Features
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-slate-900 mb-6 text-center">
-            Everything You Need for Course Allocation
+          {/* Eyebrow */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(201,168,76,0.08)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            padding: '5px 14px', borderRadius: 100, marginBottom: 20,
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#c9a84c', display: 'inline-block',
+            }} />
+            <span style={{
+              fontSize: 11, color: '#c9a84c', fontWeight: 600,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+            }}>
+              Platform Features
+            </span>
+          </div>
+
+          {/* Title */}
+          <h2 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 'clamp(26px, 3.8vw, 42px)',
+            fontWeight: 700, color: '#f0ece0',
+            lineHeight: 1.2, margin: '0 0 14px',
+          }}>
+            Everything You Need for{' '}
+            <em style={{ fontStyle: 'normal', color: '#c9a84c' }}>Course Allocation</em>
           </h2>
-          <p className="text-lg text-slate-600 max-w-3xl mx-auto text-center">
-            A complete platform designed to make course allocation efficient, fair, and transparent for all stakeholders.
+
+          {/* Gold divider */}
+          <div style={{ width: 48, height: 2, background: '#c9a84c', margin: '16px 0' }} />
+
+          {/* Subtitle */}
+          <p style={{
+            fontSize: 15, color: '#5e6d85',
+            lineHeight: 1.7, maxWidth: 540, margin: 0,
+          }}>
+            A complete platform designed to make course allocation efficient, fair,
+            and transparent for every stakeholder.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 w-full">
+        {/* Feature grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 1,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 16,
+          overflow: 'hidden',
+        }}>
           {features.map((feature, index) => (
-            <FeatureCard key={feature.title} feature={feature} index={index} />
+            <FeatureCard
+              key={feature.title}
+              feature={feature}
+              index={index}
+              isInView={isInView}
+            />
           ))}
         </div>
+
+        {/* Stats footer strip */}
+        <div style={{
+          display: 'flex', gap: 16, marginTop: 40, flexWrap: 'wrap',
+        }}>
+          {[
+            { num: '98%', label: 'Allocation Accuracy' },
+            { num: '<2s', label: 'Processing Time' },
+            { num: '10k+', label: 'Students Served' },
+          ].map(s => (
+            <div key={s.label} style={{
+              padding: '14px 22px',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.02)',
+            }}>
+              <div style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 26, fontWeight: 700, color: '#c9a84c',
+                lineHeight: 1,
+              }}>{s.num}</div>
+              <div style={{
+                fontSize: 11, color: '#3a4a60',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                fontWeight: 500, marginTop: 4,
+              }}>{s.label}</div>
+            </div>
+          ))}
+
+          <div style={{
+            flex: 1, minWidth: 200,
+            display: 'flex', alignItems: 'center',
+          }}>
+            <p style={{ fontSize: 13, color: '#2a3548', lineHeight: 1.6, margin: 0 }}>
+              Trusted by universities and institutions to handle course allocation
+              at scale — from registration to results.
+            </p>
+          </div>
+        </div>
+
       </div>
     </section>
   );

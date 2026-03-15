@@ -2,15 +2,14 @@ import { motion, useInView } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
 
 const stats = [
-  { label: 'Students Enrolled', endValue: 5000, suffix: '+' },
-  { label: 'Courses Offered', endValue: 150, suffix: '+' },
-  { label: 'Departments', endValue: 12, suffix: '' },
-  { label: 'Satisfaction Rate', endValue: 98, suffix: '%' },
+  { label: 'Students Enrolled', endValue: 5000, suffix: '+', barWidth: '85%' },
+  { label: 'Courses Offered',   endValue: 150,  suffix: '+', barWidth: '65%' },
+  { label: 'Departments',       endValue: 12,   suffix: '',  barWidth: '48%' },
+  { label: 'Satisfaction Rate', endValue: 98,   suffix: '%', barWidth: '98%' },
 ];
 
 function AnimatedCounter({ endValue, suffix, isInView }) {
   const [count, setCount] = useState(0);
-
   useEffect(() => {
     if (!isInView) return;
     let start = 0;
@@ -18,74 +17,105 @@ function AnimatedCounter({ endValue, suffix, isInView }) {
     const increment = endValue / (duration / 16);
     const timer = setInterval(() => {
       start += increment;
-      if (start >= endValue) {
-        setCount(endValue);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
+      if (start >= endValue) { setCount(endValue); clearInterval(timer); }
+      else setCount(Math.floor(start));
     }, 16);
     return () => clearInterval(timer);
   }, [isInView, endValue]);
-
-  return (
-    <span>
-      {count.toLocaleString()}{suffix}
-    </span>
-  );
+  return <span>{count.toLocaleString()}{suffix}</span>;
 }
 
 export default function StatsSection() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
-    <section id="stats" className="py-32 sm:py-40 lg:py-48 bg-linear-to-br from-navy-900 via-navy-800 to-navy-950 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-navy-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/2 translate-x-1/2 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl" />
-      </div>
+    <section
+      id="stats"
+      style={{
+        background: '#080d1a',
+        padding: '80px 0',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 32px' }}>
 
-      <div className="w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+        {/* Header */}
         <motion.div
-          className="text-center mb-20 lg:mb-24"
+          style={{ textAlign: 'center', marginBottom: 48 }}
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
-          <span className="inline-block px-4 py-1.5 bg-linear-to-r from-gold-400/20 to-white/10 text-gold-200 text-sm font-semibold rounded-full mb-4 border border-gold-400/20 backdrop-blur-sm">
-            By The Numbers
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display text-white mb-6">
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(201,168,76,0.08)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            padding: '5px 14px', borderRadius: 100, marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 11, color: '#c9a84c', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              By The Numbers
+            </span>
+          </div>
+          <h2 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 'clamp(24px, 3.5vw, 38px)',
+            fontWeight: 700, color: '#f0ece0', margin: '0 0 10px',
+          }}>
             Trusted by Vignan University
           </h2>
-          <p className="text-lg text-white/60 max-w-xl mx-auto">
+          <p style={{ fontSize: 14, color: '#3a4a60' }}>
             Serving thousands of students with intelligent course allocation every semester.
           </p>
         </motion.div>
 
-        <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 w-full">
-          {stats.map((stat, index) => (
+        {/* Stats Grid */}
+        <div
+          ref={ref}
+          style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 1, background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14, overflow: 'hidden',
+          }}
+        >
+          {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="group relative"
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: index * 0.15 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              style={{ background: '#0d1425', padding: '36px 28px', position: 'relative', cursor: 'default' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#111c35'}
+              onMouseLeave={e => e.currentTarget.style.background = '#0d1425'}
             >
-              <div className="bg-linear-to-br from-white/10 via-white/5 to-white/0 backdrop-blur-sm rounded-3xl p-6 sm:p-10 border border-white/20 hover:border-gold-400/40 hover:bg-linear-to-br hover:from-white/20 hover:via-white/10 hover:to-white/5 transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-gold-400/20 hover:-translate-y-1">
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-linear-to-t from-gold-400/5 to-transparent rounded-3xl pointer-events-none" />
-                <div className="relative z-10">
-                  <div className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display text-gold-300 mb-3 tracking-tight group-hover:text-gold-200 transition-colors duration-300">
-                    <AnimatedCounter endValue={stat.endValue} suffix={stat.suffix} isInView={isInView} />
-                  </div>
-                  <p className="text-sm text-white/70 font-medium group-hover:text-white/90 transition-colors">{stat.label}</p>
-                </div>
+              {/* Top accent bar */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0,
+                height: 2, background: 'rgba(201,168,76,0.15)',
+              }}>
+                <div style={{ height: '100%', width: stat.barWidth, background: '#c9a84c', borderRadius: 1 }} />
+              </div>
+
+              <div style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 42, fontWeight: 700, color: '#c9a84c',
+                lineHeight: 1, marginBottom: 8,
+              }}>
+                <AnimatedCounter endValue={stat.endValue} suffix={stat.suffix} isInView={isInView} />
+              </div>
+              <div style={{
+                fontSize: 12, color: '#3a4a60',
+                textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500,
+              }}>
+                {stat.label}
               </div>
             </motion.div>
           ))}
         </div>
+
       </div>
     </section>
   );

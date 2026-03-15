@@ -2,12 +2,46 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import {
-  HiCheckBadge, HiClock, HiBookOpen, HiExclamationTriangle,
-  HiQueueList, HiChartBar, HiCalendarDays, HiBuildingOffice2,
-  HiSparkles
+  HiCheckBadge,
+  HiClock,
+  HiBookOpen,
+  HiExclamationTriangle,
+  HiQueueList,
+  HiChartBar,
+  HiCalendarDays,
+  HiBuildingOffice2,
+  HiSparkles,
 } from 'react-icons/hi2';
+
+const pageStyle = {
+  fontFamily: "'DM Sans', sans-serif",
+  maxWidth: 680,
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+};
+
+const cardStyle = {
+  background: '#0d1425',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 14,
+  overflow: 'hidden',
+};
+
+const metaLabelStyle = {
+  display: 'flex', alignItems: 'center', gap: 5,
+  fontSize: 10, fontWeight: 600,
+  color: '#3a4a60',
+  textTransform: 'uppercase', letterSpacing: '0.1em',
+  marginBottom: 5,
+};
+
+const metaValueStyle = {
+  fontSize: 14, fontWeight: 600, color: '#e8e2d0',
+};
 
 export default function ResultsPage() {
   const { currentUser, userProfile } = useAuth();
@@ -18,14 +52,14 @@ export default function ResultsPage() {
   useEffect(() => {
     async function fetchAllocation() {
       try {
-        const q = query(collection(db, 'allocations'), where('studentId', '==', currentUser.uid));
+        const q = query(
+          collection(db, 'allocations'),
+          where('studentId', '==', currentUser.uid)
+        );
         const snap = await getDocs(q);
-
         if (!snap.empty) {
           const allocData = { id: snap.docs[0].id, ...snap.docs[0].data() };
           setAllocation(allocData);
-
-          // Fetch the full course details if allocated
           if (allocData.allocatedCourse) {
             const coursesSnap = await getDocs(collection(db, 'courses'));
             const course = coursesSnap.docs
@@ -42,56 +76,118 @@ export default function ResultsPage() {
     fetchAllocation();
   }, [currentUser]);
 
+  // ── Loading ──
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-navy-500 border-t-transparent rounded-full animate-spin" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+        <div style={{
+          width: 36, height: 36,
+          border: '3px solid rgba(201,168,76,0.15)',
+          borderTopColor: '#c9a84c',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // No allocation record at all
+  // ── Results Pending ──
   if (!allocation && !userProfile?.allocatedCourse) {
     return (
       <motion.div
-        className="max-w-md mx-auto text-center py-20"
-        initial={{ opacity: 0, y: 10 }}
+        style={{ maxWidth: 440, margin: '0 auto', textAlign: 'center', padding: '80px 0', fontFamily: "'DM Sans', sans-serif" }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="w-16 h-16 bg-gold-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <HiClock className="w-8 h-8 text-gold-500" />
+        <div style={{
+          width: 72, height: 72,
+          background: 'rgba(201,168,76,0.08)',
+          border: '1px solid rgba(201,168,76,0.2)',
+          borderRadius: 20,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 24px',
+        }}>
+          <HiClock style={{ width: 36, height: 36, color: '#c9a84c' }} />
         </div>
-        <h2 className="text-xl font-bold font-display text-slate-900 mb-2">Results Pending</h2>
-        <p className="text-slate-500 text-sm leading-relaxed">
-          Course allocation has not been run yet. Once the administrator runs the Gale-Shapley algorithm, your result will appear here.
+        <h2 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 24, fontWeight: 700, color: '#f0ece0', marginBottom: 10,
+        }}>
+          Results Pending
+        </h2>
+        <div style={{ width: 40, height: 2, background: '#c9a84c', margin: '0 auto 16px' }} />
+        <p style={{ fontSize: 14, color: '#3a4a60', lineHeight: 1.7 }}>
+          Course allocation has not been run yet. Once the administrator runs the
+          Gale-Shapley algorithm, your result will appear here.
         </p>
       </motion.div>
     );
   }
 
-  // Student was processed but left unallocated
+  // ── Not Allocated ──
   if (allocation?.unallocated || (!allocation?.allocatedCourse && !userProfile?.allocatedCourse)) {
     return (
       <motion.div
-        className="max-w-md mx-auto text-center py-20"
-        initial={{ opacity: 0, y: 10 }}
+        style={{ maxWidth: 480, margin: '0 auto', padding: '60px 0', fontFamily: "'DM Sans', sans-serif" }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <HiExclamationTriangle className="w-8 h-8 text-rose-400" />
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{
+            width: 72, height: 72,
+            background: 'rgba(226,75,74,0.08)',
+            border: '1px solid rgba(226,75,74,0.2)',
+            borderRadius: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 24px',
+          }}>
+            <HiExclamationTriangle style={{ width: 36, height: 36, color: '#e24b4a' }} />
+          </div>
+          <h2 style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 24, fontWeight: 700, color: '#f0ece0', marginBottom: 10,
+          }}>
+            Not Allocated
+          </h2>
+          <div style={{ width: 40, height: 2, background: '#e24b4a', margin: '0 auto 16px' }} />
+          <p style={{ fontSize: 14, color: '#3a4a60', lineHeight: 1.7 }}>
+            Unfortunately, none of your preferred courses had seats available for
+            your priority level. Please contact your administrator.
+          </p>
         </div>
-        <h2 className="text-xl font-bold font-display text-slate-900 mb-2">Not Allocated</h2>
-        <p className="text-slate-500 text-sm leading-relaxed mb-4">
-          Unfortunately, none of your preferred courses had seats available for your priority level. Please contact your administrator.
-        </p>
+
         {allocation?.preferences?.length > 0 && (
-          <div className="text-left bg-white rounded-2xl border border-slate-200 p-4 mt-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Your Preferences</p>
-            <div className="space-y-2">
+          <div style={{
+            background: '#0d1425',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 14, padding: '20px 20px',
+          }}>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: '#3a4a60',
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14,
+            }}>
+              Your Preferences
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {allocation.preferences.map((pref, i) => (
-                <div key={pref} className="flex items-center gap-2.5 text-sm text-slate-600">
-                  <span className="w-5 h-5 bg-slate-100 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">{i + 1}</span>
-                  {pref}
+                <div key={pref} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 9,
+                }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 7, flexShrink: 0,
+                    background: 'rgba(201,168,76,0.1)',
+                    border: '1px solid rgba(201,168,76,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 700, color: '#c9a84c',
+                  }}>
+                    {i + 1}
+                  </div>
+                  <span style={{ fontSize: 13, color: '#5e6d85' }}>{pref}</span>
                 </div>
               ))}
             </div>
@@ -101,6 +197,7 @@ export default function ResultsPage() {
     );
   }
 
+  // ── Allocated ──
   const courseName = allocation?.courseName || courseDetails?.courseName || userProfile?.allocatedCourse || '—';
   const courseId = allocation?.allocatedCourse || '—';
   const prefRank = allocation?.preferenceRank;
@@ -112,141 +209,284 @@ export default function ResultsPage() {
 
   return (
     <motion.div
-      className="max-w-2xl mx-auto space-y-4"
+      style={pageStyle}
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Success Header */}
-      <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-6 text-center text-white">
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Success Header ── */}
+      <div style={{
+        background: '#0d1425',
+        border: '1px solid rgba(29,158,117,0.2)',
+        borderRadius: 14,
+        padding: '28px 24px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Subtle green glow */}
+        <div style={{
+          position: 'absolute', top: 0, left: '50%',
+          transform: 'translateX(-50%)',
+          width: 300, height: 120,
+          background: 'radial-gradient(ellipse, rgba(29,158,117,0.1) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', damping: 12, delay: 0.2 }}
-          className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{
+            width: 68, height: 68,
+            background: 'rgba(29,158,117,0.12)',
+            border: '1px solid rgba(29,158,117,0.3)',
+            borderRadius: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px',
+            position: 'relative', zIndex: 2,
+          }}
         >
-          <HiCheckBadge className="w-10 h-10 text-white" />
+          <HiCheckBadge style={{ width: 36, height: 36, color: '#1d9e75' }} />
         </motion.div>
-        <h2 className="text-2xl font-bold font-display mb-1">Course Allocated!</h2>
-        <p className="text-white/70 text-sm">
+
+        <h2 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 26, fontWeight: 700, color: '#f0ece0',
+          margin: '0 0 8px', position: 'relative', zIndex: 2,
+        }}>
+          Course Allocated!
+        </h2>
+        <p style={{ fontSize: 13, color: '#3a4a60', margin: '0 0 16px', position: 'relative', zIndex: 2 }}>
           Your course has been assigned via Gale-Shapley stable matching
         </p>
+
         {prefRank && (
-          <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-white/15 rounded-full text-sm font-semibold">
-            <HiSparkles className="w-4 h-4" />
-            {prefRank === 1 ? '🎉 First Choice Allocated!' : `Preference #${prefRank} Allocated`}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px',
+            background: 'rgba(201,168,76,0.1)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            borderRadius: 100,
+            fontSize: 12, fontWeight: 600, color: '#c9a84c',
+            position: 'relative', zIndex: 2,
+          }}>
+            <HiSparkles style={{ width: 14, height: 14 }} />
+            {prefRank === 1 ? 'First Choice Allocated!' : `Preference #${prefRank} Allocated`}
           </div>
         )}
       </div>
 
-      {/* Course Details Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="bg-emerald-50 border-b border-emerald-100 px-5 py-4">
-          <div className="flex items-center gap-2 mb-1">
-            <HiBookOpen className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">Allocated Course</span>
+      {/* ── Course Details Card ── */}
+      <div style={cardStyle}>
+        {/* Card header */}
+        <div style={{
+          padding: '18px 24px',
+          background: 'rgba(29,158,117,0.06)',
+          borderBottom: '1px solid rgba(29,158,117,0.1)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+            <HiBookOpen style={{ width: 15, height: 15, color: '#1d9e75' }} />
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: '#1d9e75',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+            }}>
+              Allocated Course
+            </span>
           </div>
-          <h3 className="text-xl font-bold font-display text-slate-900">{courseName}</h3>
-          <p className="text-sm text-slate-400 mt-0.5">{courseId !== courseName ? courseId : ''}</p>
+          <div style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 22, fontWeight: 700, color: '#f0ece0', marginBottom: 4,
+          }}>
+            {courseName}
+          </div>
+          {courseId !== courseName && (
+            <div style={{ fontSize: 12, color: '#3a4a60' }}>{courseId}</div>
+          )}
         </div>
-        <div className="px-5 py-4 grid grid-cols-2 gap-4">
+
+        {/* Meta grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 1,
+          background: 'rgba(255,255,255,0.04)',
+        }}>
           {department && (
-            <div>
-              <div className="flex items-center gap-1 text-slate-400 mb-1">
-                <HiBuildingOffice2 className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Department</span>
+            <div style={{ background: '#0d1425', padding: '16px 20px' }}>
+              <div style={metaLabelStyle}>
+                <HiBuildingOffice2 style={{ width: 12, height: 12 }} />
+                Department
               </div>
-              <p className="text-sm font-semibold text-slate-700">{department}</p>
+              <div style={metaValueStyle}>{department}</div>
             </div>
           )}
           {timetableSlot && (
-            <div>
-              <div className="flex items-center gap-1 text-slate-400 mb-1">
-                <HiCalendarDays className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Schedule</span>
+            <div style={{ background: '#0d1425', padding: '16px 20px' }}>
+              <div style={metaLabelStyle}>
+                <HiCalendarDays style={{ width: 12, height: 12 }} />
+                Schedule
               </div>
-              <p className="text-sm font-semibold text-slate-700">{timetableSlot}</p>
+              <div style={metaValueStyle}>{timetableSlot}</div>
             </div>
           )}
           {prefRank && (
-            <div>
-              <div className="flex items-center gap-1 text-slate-400 mb-1">
-                <HiQueueList className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Preference Rank</span>
+            <div style={{ background: '#0d1425', padding: '16px 20px' }}>
+              <div style={metaLabelStyle}>
+                <HiQueueList style={{ width: 12, height: 12 }} />
+                Preference Rank
               </div>
-              <p className="text-sm font-semibold text-slate-700">#{prefRank} of {allocation?.preferences?.length || '?'}</p>
+              <div style={metaValueStyle}>
+                #{prefRank} of {allocation?.preferences?.length || '?'}
+              </div>
             </div>
           )}
           {allocatedAt && (
-            <div>
-              <div className="flex items-center gap-1 text-slate-400 mb-1">
-                <HiClock className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Allocated On</span>
+            <div style={{ background: '#0d1425', padding: '16px 20px' }}>
+              <div style={metaLabelStyle}>
+                <HiClock style={{ width: 12, height: 12 }} />
+                Allocated On
               </div>
-              <p className="text-sm font-semibold text-slate-700">
+              <div style={metaValueStyle}>
                 {allocatedAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </p>
+              </div>
             </div>
           )}
         </div>
+
+        {/* Override notice */}
         {allocation?.overridden && (
-          <div className="px-5 py-2 bg-amber-50 border-t border-amber-100">
-            <p className="text-xs text-amber-600 font-medium">⚡ This allocation was manually overridden by an administrator</p>
+          <div style={{
+            padding: '10px 20px',
+            background: 'rgba(186,117,23,0.08)',
+            borderTop: '1px solid rgba(186,117,23,0.15)',
+          }}>
+            <span style={{ fontSize: 12, color: '#ba7517', fontWeight: 500 }}>
+              ⚡ This allocation was manually overridden by an administrator
+            </span>
           </div>
         )}
       </div>
 
-      {/* Preferences vs Result */}
+      {/* ── Preferences vs Result ── */}
       {userProfile?.preferences?.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <HiQueueList className="w-4 h-4 text-navy-500" />
-            <h4 className="text-sm font-semibold text-slate-900">Your Preference Rankings</h4>
-          </div>
-          <div className="space-y-2">
-            {userProfile.preferences.map((pref, idx) => {
-              const isAllocated =
-                pref === allocation?.allocatedCourse ||
-                pref === (courseDetails?.courseId || courseDetails?.id);
-              return (
-                <div
-                  key={pref}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                    isAllocated
-                      ? 'bg-emerald-50 border-emerald-200'
-                      : 'bg-slate-50 border-slate-100'
-                  }`}
-                >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                    isAllocated ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-500'
-                  }`}>
-                    {idx + 1}
-                  </div>
-                  <span className={`text-sm font-medium flex-1 truncate ${isAllocated ? 'text-emerald-800' : 'text-slate-600'}`}>
-                    {pref}
-                  </span>
-                  {isAllocated && (
-                    <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                      <HiCheckBadge className="w-4 h-4" /> Allocated
+        <div style={cardStyle}>
+          <div style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <HiQueueList style={{ width: 16, height: 16, color: '#c9a84c' }} />
+              <span style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 15, fontWeight: 700, color: '#e8e2d0',
+              }}>
+                Your Preference Rankings
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {userProfile.preferences.map((pref, idx) => {
+                const isAllocated =
+                  pref === allocation?.allocatedCourse ||
+                  pref === (courseDetails?.courseId || courseDetails?.id);
+                return (
+                  <div
+                    key={pref}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '11px 14px',
+                      background: isAllocated
+                        ? 'rgba(29,158,117,0.07)'
+                        : 'rgba(255,255,255,0.02)',
+                      border: isAllocated
+                        ? '1px solid rgba(29,158,117,0.2)'
+                        : '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: 10,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {/* Rank badge */}
+                    <div style={{
+                      width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                      background: isAllocated
+                        ? 'rgba(29,158,117,0.15)'
+                        : 'rgba(201,168,76,0.08)',
+                      border: isAllocated
+                        ? '1px solid rgba(29,158,117,0.3)'
+                        : '1px solid rgba(201,168,76,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700,
+                      color: isAllocated ? '#1d9e75' : '#c9a84c',
+                    }}>
+                      {idx + 1}
+                    </div>
+
+                    {/* Course ID */}
+                    <span style={{
+                      flex: 1, fontSize: 13,
+                      color: isAllocated ? '#e8e2d0' : '#5e6d85',
+                      fontWeight: isAllocated ? 500 : 400,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {pref}
                     </span>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Allocated badge */}
+                    {isAllocated && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        flexShrink: 0,
+                        fontSize: 11, fontWeight: 600, color: '#1d9e75',
+                        background: 'rgba(29,158,117,0.1)',
+                        border: '1px solid rgba(29,158,117,0.2)',
+                        padding: '3px 10px', borderRadius: 100,
+                      }}>
+                        <HiCheckBadge style={{ width: 12, height: 12 }} />
+                        Allocated
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
-      {/* CGPA Info */}
+      {/* ── CGPA Strip ── */}
       {userProfile?.cgpa && (
-        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 flex items-center gap-3">
-          <HiChartBar className="w-5 h-5 text-slate-400 shrink-0" />
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '16px 20px',
+          background: '#0d1425',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 12,
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(201,168,76,0.08)',
+            border: '1px solid rgba(201,168,76,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <HiChartBar style={{ width: 18, height: 18, color: '#c9a84c' }} />
+          </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium">Your CGPA used for priority ranking</p>
-            <p className="text-sm font-bold text-slate-700">{Number(userProfile.cgpa).toFixed(2)} / 10.0</p>
+            <div style={{ fontSize: 11, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginBottom: 3 }}>
+              CGPA used for priority ranking
+            </div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 20, fontWeight: 700, color: '#c9a84c',
+            }}>
+              {Number(userProfile.cgpa).toFixed(2)}
+              <span style={{ fontSize: 13, color: '#3a4a60', fontFamily: "'DM Sans', sans-serif", marginLeft: 4 }}>
+                / 10.0
+              </span>
+            </div>
           </div>
         </div>
       )}
+
     </motion.div>
   );
 }

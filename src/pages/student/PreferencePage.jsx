@@ -3,8 +3,57 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { HiArrowsUpDown, HiBookOpen, HiClock, HiCheckCircle, HiXCircle, HiSparkles, HiChevronUp, HiChevronDown, HiTrash } from 'react-icons/hi2';
+import {
+  HiArrowsUpDown,
+  HiClock,
+  HiCheckCircle,
+  HiXCircle,
+  HiSparkles,
+  HiChevronUp,
+  HiChevronDown,
+  HiTrash,
+} from 'react-icons/hi2';
 import toast from 'react-hot-toast';
+
+const pageStyle = {
+  fontFamily: "'DM Sans', sans-serif",
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 20,
+};
+
+const cardStyle = {
+  background: '#0d1425',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 14,
+  padding: '24px',
+};
+
+const sectionTitleStyle = {
+  fontFamily: "'Playfair Display', Georgia, serif",
+  fontSize: 16,
+  fontWeight: 700,
+  color: '#e8e2d0',
+  margin: '0 0 16px',
+};
+
+const labelStyle = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#3a4a60',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+};
+
+const badgeStyle = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#c9a84c',
+  background: 'rgba(201,168,76,0.1)',
+  border: '1px solid rgba(201,168,76,0.2)',
+  padding: '3px 10px',
+  borderRadius: 100,
+};
 
 export default function PreferencePage() {
   const { currentUser, userProfile, setUserProfile } = useAuth();
@@ -19,24 +68,20 @@ export default function PreferencePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Fetch courses
         const coursesSnap = await getDocs(collection(db, 'courses'));
         const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setCourses(coursesList);
 
-        // Fetch settings for deadline
         const settingsSnap = await getDoc(doc(db, 'settings', 'general'));
         if (settingsSnap.exists()) {
           const dl = settingsSnap.data().preferenceDeadline;
           if (dl) setDeadline(new Date(dl.seconds ? dl.seconds * 1000 : dl));
         }
 
-        // Load existing preferences
         if (userProfile?.preferences?.length > 0) {
           setPreferences(userProfile.preferences);
         }
 
-        // Generate recommendations
         const recommended = coursesList.filter(c => {
           const deptMatch = c.department === userProfile?.department || c.department === 'Open Elective';
           const prereqsMet = !c.prerequisites?.length || c.prerequisites.every(p => userProfile?.completedCourses?.includes(p));
@@ -53,7 +98,6 @@ export default function PreferencePage() {
     fetchData();
   }, [userProfile]);
 
-  // Countdown timer
   useEffect(() => {
     if (!deadline) return;
     const interval = setInterval(() => {
@@ -62,11 +106,12 @@ export default function PreferencePage() {
         setTimeLeft(null);
         clearInterval(interval);
       } else {
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-        setTimeLeft({ days, hours, minutes, seconds });
+        setTimeLeft({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((diff / (1000 * 60)) % 60),
+          seconds: Math.floor((diff / 1000) % 60),
+        });
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -75,12 +120,8 @@ export default function PreferencePage() {
   const deadlinePassed = deadline && deadline.getTime() < Date.now();
 
   function addPreference(courseId) {
-    if (preferences.includes(courseId)) {
-      return toast.error('Course already in preferences');
-    }
-    if (preferences.length >= 6) {
-      return toast.error('Maximum 6 preferences allowed');
-    }
+    if (preferences.includes(courseId)) return toast.error('Course already in preferences');
+    if (preferences.length >= 6) return toast.error('Maximum 6 preferences allowed');
     setPreferences([...preferences, courseId]);
     toast.success('Course added to preferences');
   }
@@ -91,16 +132,16 @@ export default function PreferencePage() {
 
   function moveUp(index) {
     if (index === 0) return;
-    const newPrefs = [...preferences];
-    [newPrefs[index - 1], newPrefs[index]] = [newPrefs[index], newPrefs[index - 1]];
-    setPreferences(newPrefs);
+    const n = [...preferences];
+    [n[index - 1], n[index]] = [n[index], n[index - 1]];
+    setPreferences(n);
   }
 
   function moveDown(index) {
     if (index === preferences.length - 1) return;
-    const newPrefs = [...preferences];
-    [newPrefs[index + 1], newPrefs[index]] = [newPrefs[index], newPrefs[index + 1]];
-    setPreferences(newPrefs);
+    const n = [...preferences];
+    [n[index + 1], n[index]] = [n[index], n[index + 1]];
+    setPreferences(n);
   }
 
   async function savePreferences() {
@@ -123,103 +164,247 @@ export default function PreferencePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-navy-500 border-t-transparent rounded-full animate-spin" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+        <div style={{
+          width: 36, height: 36,
+          border: '3px solid rgba(201,168,76,0.2)',
+          borderTopColor: '#c9a84c',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {/* Deadline Timer */}
+    <motion.div
+      style={pageStyle}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Deadline Timer ── */}
       {deadline && (
-        <div className={`rounded-2xl border p-5 ${deadlinePassed ? 'bg-rose-50 border-rose-200' : 'bg-gradient-to-r from-navy-600 to-navy-800 border-transparent'}`}>
-          <div className="flex items-center gap-3 mb-3">
-            <HiClock className={`w-5 h-5 ${deadlinePassed ? 'text-rose-500' : 'text-gold-300'}`} />
-            <h3 className={`text-sm font-semibold ${deadlinePassed ? 'text-rose-700' : 'text-white'}`}>
+        <div style={{
+          borderRadius: 14,
+          border: deadlinePassed
+            ? '1px solid rgba(226,75,74,0.2)'
+            : '1px solid rgba(201,168,76,0.15)',
+          background: deadlinePassed
+            ? 'rgba(226,75,74,0.06)'
+            : '#0d1425',
+          padding: '20px 24px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <HiClock style={{
+              width: 18, height: 18,
+              color: deadlinePassed ? '#e24b4a' : '#c9a84c',
+            }} />
+            <span style={{
+              fontSize: 13, fontWeight: 600,
+              color: deadlinePassed ? '#e24b4a' : '#c9a84c',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
               {deadlinePassed ? 'Submission Deadline Passed' : 'Submission Deadline'}
-            </h3>
+            </span>
           </div>
+
           {!deadlinePassed && timeLeft && (
-            <div className="flex gap-3">
-              {[
-                { label: 'Days', value: timeLeft.days },
-                { label: 'Hours', value: timeLeft.hours },
-                { label: 'Min', value: timeLeft.minutes },
-                { label: 'Sec', value: timeLeft.seconds },
-              ].map((item) => (
-                <div key={item.label} className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 text-center min-w-[60px]">
-                  <p className="text-2xl font-bold text-white font-display">{String(item.value).padStart(2, '0')}</p>
-                  <p className="text-[10px] text-white/50 font-medium uppercase">{item.label}</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {/* Days */}
+              <div style={{
+                background: 'rgba(201,168,76,0.08)',
+                border: '1px solid rgba(201,168,76,0.15)',
+                borderRadius: 10, padding: '10px 16px', textAlign: 'center', minWidth: 64,
+              }}>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 26, fontWeight: 700, color: '#c9a84c', lineHeight: 1,
+                }}>
+                  {String(timeLeft.days).padStart(2, '0')}
                 </div>
-              ))}
+                <div style={labelStyle}>Days</div>
+              </div>
+              {/* Hours */}
+              <div style={{
+                background: 'rgba(201,168,76,0.08)',
+                border: '1px solid rgba(201,168,76,0.15)',
+                borderRadius: 10, padding: '10px 16px', textAlign: 'center', minWidth: 64,
+              }}>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 26, fontWeight: 700, color: '#c9a84c', lineHeight: 1,
+                }}>
+                  {String(timeLeft.hours).padStart(2, '0')}
+                </div>
+                <div style={labelStyle}>Hours</div>
+              </div>
+              {/* Minutes */}
+              <div style={{
+                background: 'rgba(201,168,76,0.08)',
+                border: '1px solid rgba(201,168,76,0.15)',
+                borderRadius: 10, padding: '10px 16px', textAlign: 'center', minWidth: 64,
+              }}>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 26, fontWeight: 700, color: '#c9a84c', lineHeight: 1,
+                }}>
+                  {String(timeLeft.minutes).padStart(2, '0')}
+                </div>
+                <div style={labelStyle}>Min</div>
+              </div>
+              {/* Seconds */}
+              <div style={{
+                background: 'rgba(201,168,76,0.08)',
+                border: '1px solid rgba(201,168,76,0.15)',
+                borderRadius: 10, padding: '10px 16px', textAlign: 'center', minWidth: 64,
+              }}>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 26, fontWeight: 700, color: '#c9a84c', lineHeight: 1,
+                }}>
+                  {String(timeLeft.seconds).padStart(2, '0')}
+                </div>
+                <div style={labelStyle}>Sec</div>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Recommendations */}
+      {/* ── Recommendations ── */}
       {recommendations.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <HiSparkles className="w-5 h-5 text-gold-500" />
-            <h3 className="text-base font-semibold font-display text-slate-900">Recommended for You</h3>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <HiSparkles style={{ width: 18, height: 18, color: '#c9a84c' }} />
+            <span style={sectionTitleStyle}>Recommended for You</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {recommendations.map((course) => (
-              <div key={course.id} className="flex items-center justify-between p-3 bg-gold-50/50 border border-gold-200/50 rounded-xl">
-                <div className="min-w-0 mr-2">
-                  <p className="text-sm font-medium text-slate-800 truncate">{course.courseName}</p>
-                  <p className="text-xs text-slate-400">{course.courseId}</p>
-                </div>
-                <button
-                  onClick={() => addPreference(course.courseId || course.id)}
-                  disabled={deadlinePassed || preferences.includes(course.courseId || course.id)}
-                  className="shrink-0 px-3 py-1.5 text-xs font-semibold text-navy-700 bg-white border border-navy-200 hover:bg-navy-50 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: 10,
+          }}>
+            {recommendations.map(course => {
+              const cId = course.courseId || course.id;
+              const isAdded = preferences.includes(cId);
+              return (
+                <div
+                  key={course.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    background: 'rgba(201,168,76,0.04)',
+                    border: '1px solid rgba(201,168,76,0.1)',
+                    borderRadius: 10,
+                  }}
                 >
-                  {preferences.includes(course.courseId || course.id) ? 'Added' : 'Add'}
-                </button>
-              </div>
-            ))}
+                  <div style={{ minWidth: 0, marginRight: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e2d0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {course.courseName}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#3a4a60', marginTop: 2 }}>{cId}</div>
+                  </div>
+                  <button
+                    onClick={() => addPreference(cId)}
+                    disabled={deadlinePassed || isAdded}
+                    style={{
+                      flexShrink: 0,
+                      padding: '5px 12px',
+                      fontSize: 12, fontWeight: 600,
+                      background: isAdded ? 'rgba(29,158,117,0.1)' : 'rgba(201,168,76,0.1)',
+                      color: isAdded ? '#1d9e75' : '#c9a84c',
+                      border: isAdded ? '1px solid rgba(29,158,117,0.2)' : '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 8, cursor: isAdded || deadlinePassed ? 'not-allowed' : 'pointer',
+                      opacity: deadlinePassed ? 0.4 : 1,
+                    }}
+                  >
+                    {isAdded ? 'Added' : 'Add'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* ── Main Two-Column Grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="lg:grid-cols-2 grid-cols-1">
+
         {/* Available Courses */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="text-base font-semibold font-display text-slate-900 mb-4">Available Courses</h3>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={sectionTitleStyle}>Available Courses</div>
+            <span style={badgeStyle}>{courses.length} courses</span>
+          </div>
+
+          <div style={{ maxHeight: 480, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 4 }}>
             {courses.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">No courses available yet.</p>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#3a4a60', fontSize: 13 }}>
+                No courses available yet.
+              </div>
             ) : (
-              courses.map((course) => {
+              courses.map(course => {
                 const cId = course.courseId || course.id;
                 const isSelected = preferences.includes(cId);
                 const seats = course.remainingSeats ?? course.seatCapacity;
                 return (
-                  <div key={course.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${isSelected ? 'bg-navy-50 border-navy-200' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}>
-                    <div className="min-w-0 mr-3">
-                      <p className="text-sm font-medium text-slate-800 truncate">{course.courseName}</p>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs text-slate-400">{cId}</span>
-                        <span className="text-xs text-slate-400">•</span>
-                        <span className={`text-xs font-medium ${seats > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  <div
+                    key={course.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      background: isSelected ? 'rgba(201,168,76,0.06)' : 'rgba(255,255,255,0.02)',
+                      border: isSelected
+                        ? '1px solid rgba(201,168,76,0.2)'
+                        : '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: 10,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ minWidth: 0, marginRight: 12 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 500, color: '#e8e2d0',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {course.courseName}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                        <span style={{ fontSize: 11, color: '#3a4a60' }}>{cId}</span>
+                        <span style={{ fontSize: 11, color: '#3a4a60' }}>·</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600,
+                          color: seats > 0 ? '#1d9e75' : '#e24b4a',
+                        }}>
                           {seats > 0 ? `${seats} seats` : 'Full'}
                         </span>
                       </div>
                       {course.prerequisites?.length > 0 && (
-                        <p className="text-[10px] text-slate-400 mt-0.5">Prerequisites: {course.prerequisites.join(', ')}</p>
+                        <div style={{ fontSize: 10, color: '#2a3548', marginTop: 2 }}>
+                          Prereq: {course.prerequisites.join(', ')}
+                        </div>
                       )}
                     </div>
                     <button
                       onClick={() => isSelected ? removePreference(cId) : addPreference(cId)}
                       disabled={deadlinePassed}
-                      className={`shrink-0 p-2 rounded-lg transition-colors disabled:opacity-40 ${
-                        isSelected ? 'text-rose-500 hover:bg-rose-50' : 'text-navy-500 hover:bg-navy-50'
-                      }`}
+                      style={{
+                        flexShrink: 0,
+                        padding: 6,
+                        background: 'none',
+                        border: 'none',
+                        cursor: deadlinePassed ? 'not-allowed' : 'pointer',
+                        color: isSelected ? '#e24b4a' : '#c9a84c',
+                        opacity: deadlinePassed ? 0.4 : 1,
+                        borderRadius: 8,
+                        transition: 'opacity 0.15s',
+                      }}
                     >
-                      {isSelected ? <HiXCircle className="w-5 h-5" /> : <HiCheckCircle className="w-5 h-5" />}
+                      {isSelected
+                        ? <HiXCircle style={{ width: 20, height: 20 }} />
+                        : <HiCheckCircle style={{ width: 20, height: 20 }} />
+                      }
                     </button>
                   </div>
                 );
@@ -229,37 +414,94 @@ export default function PreferencePage() {
         </div>
 
         {/* Ranked Preferences */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold font-display text-slate-900">Your Ranked Preferences</h3>
-            <span className="text-xs font-medium text-slate-400">{preferences.length}/6</span>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={sectionTitleStyle}>Your Ranked Preferences</div>
+            <span style={badgeStyle}>{preferences.length} / 6</span>
           </div>
+
           {preferences.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <HiArrowsUpDown className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm">Select courses from the left to rank them</p>
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '48px 0', color: '#2a3548', textAlign: 'center',
+            }}>
+              <HiArrowsUpDown style={{ width: 36, height: 36, marginBottom: 12, color: '#1e2a3a' }} />
+              <div style={{ fontSize: 13 }}>Select courses from the left to rank them</div>
             </div>
           ) : (
-            <div className="space-y-2 mb-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {preferences.map((prefId, idx) => {
                 const course = getCourse(prefId);
                 return (
                   <motion.div
                     key={prefId}
                     layout
-                    className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 12px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 10,
+                    }}
                   >
-                    <div className="w-7 h-7 bg-navy-100 rounded-lg flex items-center justify-center text-xs font-bold text-navy-700 shrink-0">
+                    {/* Rank number */}
+                    <div style={{
+                      width: 28, height: 28, flexShrink: 0,
+                      background: 'rgba(201,168,76,0.1)',
+                      border: '1px solid rgba(201,168,76,0.2)',
+                      borderRadius: 8,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: 700, color: '#c9a84c',
+                    }}>
                       {idx + 1}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-800 truncate">{course?.courseName || prefId}</p>
-                      <p className="text-xs text-slate-400">{prefId}</p>
+
+                    {/* Course info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 13, fontWeight: 500, color: '#e8e2d0',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {course?.courseName || prefId}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#3a4a60', marginTop: 2 }}>{prefId}</div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => moveUp(idx)} disabled={idx === 0} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><HiChevronUp className="w-4 h-4" /></button>
-                      <button onClick={() => moveDown(idx)} disabled={idx === preferences.length - 1} className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"><HiChevronDown className="w-4 h-4" /></button>
-                      <button onClick={() => removePreference(prefId)} className="p-1 text-rose-400 hover:text-rose-600"><HiTrash className="w-4 h-4" /></button>
+
+                    {/* Controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                      <button
+                        onClick={() => moveUp(idx)}
+                        disabled={idx === 0}
+                        style={{
+                          padding: 5, background: 'none', border: 'none',
+                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                          color: '#3a4a60', opacity: idx === 0 ? 0.3 : 1,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <HiChevronUp style={{ width: 15, height: 15 }} />
+                      </button>
+                      <button
+                        onClick={() => moveDown(idx)}
+                        disabled={idx === preferences.length - 1}
+                        style={{
+                          padding: 5, background: 'none', border: 'none',
+                          cursor: idx === preferences.length - 1 ? 'not-allowed' : 'pointer',
+                          color: '#3a4a60', opacity: idx === preferences.length - 1 ? 0.3 : 1,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <HiChevronDown style={{ width: 15, height: 15 }} />
+                      </button>
+                      <button
+                        onClick={() => removePreference(prefId)}
+                        style={{
+                          padding: 5, background: 'none', border: 'none',
+                          cursor: 'pointer', color: '#e24b4a', borderRadius: 6,
+                        }}
+                      >
+                        <HiTrash style={{ width: 15, height: 15 }} />
+                      </button>
                     </div>
                   </motion.div>
                 );
@@ -267,14 +509,48 @@ export default function PreferencePage() {
             </div>
           )}
 
+          {/* Gold divider */}
+          <div style={{ height: 1, background: 'rgba(201,168,76,0.1)', margin: '4px 0 16px' }} />
+
+          {/* Save button */}
           <button
             onClick={savePreferences}
             disabled={saving || deadlinePassed || preferences.length === 0}
-            className="w-full py-3 px-4 bg-gradient-to-r from-navy-600 to-navy-700 hover:from-navy-700 hover:to-navy-800 text-white font-semibold rounded-xl shadow-lg shadow-navy-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              width: '100%',
+              padding: '13px',
+              background: saving || deadlinePassed || preferences.length === 0
+                ? 'rgba(201,168,76,0.15)'
+                : '#c9a84c',
+              color: saving || deadlinePassed || preferences.length === 0
+                ? '#3a4a60'
+                : '#080d1a',
+              fontSize: 14, fontWeight: 700,
+              border: '1px solid rgba(201,168,76,0.2)',
+              borderRadius: 10,
+              cursor: saving || deadlinePassed || preferences.length === 0
+                ? 'not-allowed'
+                : 'pointer',
+              transition: 'all 0.2s',
+              letterSpacing: '0.02em',
+            }}
           >
-            {saving ? 'Saving...' : 'Save Preferences'}
+            {saving ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span style={{
+                  width: 14, height: 14,
+                  border: '2px solid #3a4a60',
+                  borderTopColor: '#c9a84c',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+                Saving…
+              </span>
+            ) : deadlinePassed ? 'Deadline Passed' : 'Save Preferences'}
           </button>
         </div>
+
       </div>
     </motion.div>
   );
