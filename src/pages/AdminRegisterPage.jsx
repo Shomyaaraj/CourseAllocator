@@ -543,7 +543,7 @@ export default function AdminRegisterPage() {
                         name="inviteCode"
                         value={formData.inviteCode}
                         onChange={handleChange}
-                        placeholder="e.g. VUCA-ADMIN-2024"
+                      
                         style={getInputStyle('inviteCode')}
                         onFocus={() => setFocusedField('inviteCode')}
                         onBlur={() => setFocusedField('')}
