@@ -29,6 +29,7 @@ export function AuthProvider({ children }) {
       registrationNumber: profileData.registrationNumber,
       department: profileData.department,
       semester: profileData.semester,
+      cgpa: profileData.cgpa ?? null,
       completedCourses: [],
       preferences: [],
       allocatedCourse: null,

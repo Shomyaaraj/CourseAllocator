@@ -33,18 +33,23 @@ const chartTitleStyle = {
   fontSize: 15, fontWeight: 700, color: '#e8e2d0',
 };
 
+// ✅ FIXED: brighter text, visible border, lighter cursor
 const tooltipStyle = {
   contentStyle: {
-    background: '#0d1425',
-    border: '1px solid rgba(201,168,76,0.15)',
+    background: '#111e36',
+    border: '1px solid rgba(201,168,76,0.35)',
     borderRadius: 8,
-    color: '#e8e2d0',
+    color: '#f0ece0',
     fontSize: 12,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
   },
-  cursor: { fill: 'rgba(255,255,255,0.03)' },
+  labelStyle: { color: '#c9a84c', fontWeight: 600, marginBottom: 4 },
+  itemStyle: { color: '#e8e2d0' },
+  cursor: { fill: 'rgba(255,255,255,0.05)' },
 };
 
-const axisStyle = { fontSize: 10, fill: '#3a4a60' };
+// ✅ FIXED: brighter axis labels
+const axisStyle = { fontSize: 11, fill: '#6e7e98' };
 
 export default function ReportsPage() {
   const [courses, setCourses] = useState([]);
@@ -134,7 +139,6 @@ export default function ReportsPage() {
         useCORS: true,
         logging: false,
       });
-
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
@@ -142,7 +146,6 @@ export default function ReportsPage() {
       const margin = 12;
       const headerH = 22;
 
-      // ── Header
       pdf.setFillColor(8, 13, 26);
       pdf.rect(0, 0, pageW, pageH, 'F');
       pdf.setFontSize(16);
@@ -157,7 +160,6 @@ export default function ReportsPage() {
         margin, 18
       );
 
-      // ── Charts image
       const availW = pageW - margin * 2;
       const availH = pageH - headerH - margin;
       const imgW = canvas.width;
@@ -283,7 +285,7 @@ export default function ReportsPage() {
       {/* ── Charts Grid ── */}
       <div ref={reportRef} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
-        {/* Course Enrollment */}
+        {/* ── Course Enrollment ── */}
         <div style={cardStyle}>
           <div style={chartHeaderStyle}>
             <HiChartBar style={{ width: 15, height: 15, color: '#c9a84c' }} />
@@ -293,14 +295,14 @@ export default function ReportsPage() {
             {enrollmentData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={enrollmentData} margin={{ left: -10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                  {/* ✅ FIXED: more visible grid lines */}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Legend
-                    wrapperStyle={{ fontSize: 11, color: '#3a4a60', paddingTop: 8 }}
-                  />
-                  <Bar dataKey="capacity" fill="rgba(255,255,255,0.07)" radius={[4, 4, 0, 0]} name="Capacity" />
+                  <Legend wrapperStyle={{ fontSize: 12, color: '#8a94a8', paddingTop: 8 }} />
+                  {/* ✅ FIXED: capacity bar is now a visible light blue ghost */}
+                  <Bar dataKey="capacity" fill="rgba(110,126,152,0.35)" radius={[4, 4, 0, 0]} name="Capacity" />
                   <Bar dataKey="enrolled" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Enrolled" />
                 </BarChart>
               </ResponsiveContainer>
@@ -310,7 +312,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Seat Utilization */}
+        {/* ── Seat Utilization ── */}
         <div style={cardStyle}>
           <div style={chartHeaderStyle}>
             <HiChartBar style={{ width: 15, height: 15, color: '#1d9e75' }} />
@@ -320,11 +322,37 @@ export default function ReportsPage() {
             {utilizationData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={utilizationData} layout="vertical" margin={{ left: 0, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis type="number" domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="name" tick={axisStyle} width={100} axisLine={false} tickLine={false} />
-                  <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="utilization" fill="#1d9e75" radius={[0, 4, 4, 0]} name="Utilization %" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis
+                    type="number" domain={[0, 100]}
+                    tick={axisStyle}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                    tickLine={false}
+                    // ✅ FIXED: add % unit to tick labels
+                    tickFormatter={v => `${v}%`}
+                  />
+                  <YAxis
+                    type="category" dataKey="name"
+                    tick={axisStyle} width={110}
+                    axisLine={false} tickLine={false}
+                  />
+                  <Tooltip
+                    {...tooltipStyle}
+                    formatter={v => [`${v}%`, 'Utilization']}
+                  />
+                  {/* ✅ FIXED: brighter green + visible label inside bar */}
+                  <Bar
+                    dataKey="utilization"
+                    fill="#1d9e75"
+                    radius={[0, 4, 4, 0]}
+                    name="Utilization %"
+                    label={{
+                      position: 'right',
+                      formatter: v => v > 0 ? `${v}%` : '',
+                      fill: '#6e7e98',
+                      fontSize: 10,
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -333,7 +361,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Course Popularity */}
+        {/* ── Course Popularity ── */}
         <div style={cardStyle}>
           <div style={chartHeaderStyle}>
             <HiChartBar style={{ width: 15, height: 15, color: '#7f77dd' }} />
@@ -343,12 +371,13 @@ export default function ReportsPage() {
             {popularityData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={popularityData} margin={{ left: -10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 11, color: '#3a4a60', paddingTop: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: '#8a94a8', paddingTop: 8 }} />
                   <Bar dataKey="votes" fill="#7f77dd" radius={[4, 4, 0, 0]} name="Preferences" />
+                  {/* ✅ FIXED: slightly more opaque gold for weighted score */}
                   <Bar dataKey="score" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Weighted Score" />
                 </BarChart>
               </ResponsiveContainer>
@@ -358,7 +387,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Department Distribution */}
+        {/* ── Department Distribution ── */}
         <div style={cardStyle}>
           <div style={chartHeaderStyle}>
             <HiChartBar style={{ width: 15, height: 15, color: '#378add' }} />
@@ -376,6 +405,9 @@ export default function ReportsPage() {
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
+                      // ✅ FIXED: visible percentage labels outside slices
+                      label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                      labelLine={{ stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }}
                     >
                       {deptData.map((entry, i) => (
                         <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
@@ -385,7 +417,7 @@ export default function ReportsPage() {
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* Dept legend */}
+                {/* ✅ FIXED: brighter legend text */}
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', gap: '6px 16px',
                   padding: '4px 20px 0',
@@ -396,7 +428,7 @@ export default function ReportsPage() {
                         width: 8, height: 8, borderRadius: 3, flexShrink: 0,
                         background: COLORS[i % COLORS.length],
                       }} />
-                      <span style={{ fontSize: 11, color: '#3a4a60' }}>
+                      <span style={{ fontSize: 11, color: '#8a94a8' }}>
                         {d.name}
                         <span style={{ color: COLORS[i % COLORS.length], fontWeight: 700, marginLeft: 4 }}>
                           {d.value}
@@ -444,7 +476,6 @@ export default function ReportsPage() {
               {unallocatedStudents.length}
             </span>
           </div>
-
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {unallocatedStudents.map((s, i) => (
               <div

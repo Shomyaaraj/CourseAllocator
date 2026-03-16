@@ -12,6 +12,7 @@ import {
   HiChevronUp,
   HiChevronDown,
   HiTrash,
+  HiChartBar,
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 
@@ -64,6 +65,8 @@ export default function PreferencePage() {
   const [deadline, setDeadline] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [cgpaInput, setCgpaInput] = useState('');
+  const [savingCgpa, setSavingCgpa] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -80,6 +83,11 @@ export default function PreferencePage() {
 
         if (userProfile?.preferences?.length > 0) {
           setPreferences(userProfile.preferences);
+        }
+
+        // Pre-fill CGPA input with existing value
+        if (userProfile?.cgpa != null) {
+          setCgpaInput(String(userProfile.cgpa));
         }
 
         const recommended = coursesList.filter(c => {
@@ -142,6 +150,21 @@ export default function PreferencePage() {
     const n = [...preferences];
     [n[index + 1], n[index]] = [n[index], n[index + 1]];
     setPreferences(n);
+  }
+
+  async function saveCgpa() {
+    const val = parseFloat(cgpaInput);
+    if (!cgpaInput || isNaN(val) || val < 0 || val > 10)
+      return toast.error('Enter a valid CGPA between 0 and 10');
+    setSavingCgpa(true);
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { cgpa: val });
+      setUserProfile({ ...userProfile, cgpa: val });
+      toast.success('CGPA updated!');
+    } catch {
+      toast.error('Failed to update CGPA');
+    }
+    setSavingCgpa(false);
   }
 
   async function savePreferences() {
@@ -273,6 +296,69 @@ export default function PreferencePage() {
           )}
         </div>
       )}
+
+      {/* ── CGPA Update Card ── */}
+      <div style={{
+        ...cardStyle,
+        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        padding: '16px 22px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 200px' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(201,168,76,0.1)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <HiChartBar style={{ width: 17, height: 17, color: '#c9a84c' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#e8e2d0' }}>Your CGPA</div>
+            <div style={{ fontSize: 11, color: '#3a4a60', marginTop: 1 }}>
+              Used as priority in course allocation
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
+          <input
+            type="number"
+            min="0" max="10" step="0.01"
+            value={cgpaInput}
+            onChange={e => setCgpaInput(e.target.value)}
+            placeholder="e.g. 8.50"
+            style={{
+              padding: '8px 12px',
+              width: 100,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: '#e8e2d0',
+              fontSize: 14,
+              outline: 'none',
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 600,
+            }}
+            onFocus={e => e.target.style.borderColor = 'rgba(201,168,76,0.4)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+          />
+          <button
+            onClick={saveCgpa}
+            disabled={savingCgpa}
+            style={{
+              padding: '8px 16px',
+              background: savingCgpa ? 'rgba(201,168,76,0.15)' : '#c9a84c',
+              color: savingCgpa ? '#3a4a60' : '#080d1a',
+              fontSize: 12, fontWeight: 700,
+              border: 'none', borderRadius: 8,
+              cursor: savingCgpa ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {savingCgpa ? 'Saving…' : 'Update CGPA'}
+          </button>
+        </div>
+      </div>
 
       {/* ── Recommendations ── */}
       {recommendations.length > 0 && (
