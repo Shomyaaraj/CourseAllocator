@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { useTheme } from 'styled-components';
 import {
   HiPlus, HiPencilSquare, HiTrash, HiXMark,
   HiBookOpen, HiClock, HiCalendarDays,
@@ -29,40 +30,53 @@ const emptyForm = {
   day: '', startTime: '', endTime: '',
 };
 
-const inputStyle = {
-  width: '100%',
-  padding: '10px 14px',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 9,
-  color: '#e8e2d0',
-  fontSize: 13,
-  outline: 'none',
-  transition: 'border-color 0.2s',
-  boxSizing: 'border-box',
-  appearance: 'none',
-};
-
-const labelStyle = {
-  display: 'block',
-  fontSize: 11,
-  fontWeight: 600,
-  color: '#3a4a60',
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  marginBottom: 7,
-};
-
-const cardStyle = {
-  background: '#0d1425',
-  border: '1px solid rgba(255,255,255,0.06)',
-  borderRadius: 14,
-  padding: '20px',
-  position: 'relative',
-  transition: 'border-color 0.2s',
-};
-
 export default function CourseManagement() {
+  const theme = useTheme();
+  const isDark = theme.mode === 'dark';
+
+  const accentColor = theme.colors.accent;
+  const textMain = isDark ? '#e8e2d0' : theme.colors.primary;
+  const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
+  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
+  const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
+  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : theme.colors.secondaryBg;
+  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border;
+  const selectOptionBg = isDark ? '#080d1a' : '#ffffff';
+  const modalBg = isDark ? '#0d1425' : theme.colors.cardBg;
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 14px',
+    background: inputBg,
+    border: '1px solid ' + inputBorder,
+    borderRadius: 9,
+    color: textMain,
+    fontSize: 13,
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
+    appearance: 'none',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 11,
+    fontWeight: 600,
+    color: textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    marginBottom: 7,
+  };
+
+  const cardStyle = {
+    background: cardBg,
+    border: '1px solid ' + borderColor,
+    borderRadius: 14,
+    padding: '20px',
+    position: 'relative',
+    transition: 'border-color 0.2s',
+  };
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -169,9 +183,7 @@ export default function CourseManagement() {
   function getInputStyle(field) {
     return {
       ...inputStyle,
-      borderColor: focusedField === field
-        ? 'rgba(201,168,76,0.45)'
-        : 'rgba(255,255,255,0.08)',
+      borderColor: focusedField === field ? accentColor : inputBorder,
     };
   }
 
@@ -180,8 +192,8 @@ export default function CourseManagement() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 36, height: 36,
-          border: '3px solid rgba(201,168,76,0.15)',
-          borderTopColor: '#c9a84c',
+          border: '3px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)'),
+          borderTopColor: accentColor,
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -203,13 +215,13 @@ export default function CourseManagement() {
         <div>
           <h2 style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 22, fontWeight: 700, color: '#f0ece0', margin: '0 0 4px',
+            fontSize: 22, fontWeight: 700, color: textMain, margin: '0 0 4px',
           }}>
             Course Management
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 32, height: 2, background: '#c9a84c' }} />
-            <p style={{ fontSize: 13, color: '#3a4a60', margin: 0 }}>
+            <div style={{ width: 32, height: 2, background: accentColor }} />
+            <p style={{ fontSize: 13, color: textMuted, margin: 0 }}>
               {courses.length} course{courses.length !== 1 ? 's' : ''} total
             </p>
           </div>
@@ -219,7 +231,7 @@ export default function CourseManagement() {
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '10px 18px',
-            background: '#c9a84c',
+            background: accentColor,
             color: '#080d1a',
             fontSize: 13, fontWeight: 700,
             border: 'none', borderRadius: 10,
@@ -237,27 +249,27 @@ export default function CourseManagement() {
       {/* ── Course Cards Grid ── */}
       {courses.length === 0 ? (
         <div style={{
-          background: '#0d1425',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: cardBg,
+          border: '1px solid ' + borderColor,
           borderRadius: 14, padding: '60px 24px', textAlign: 'center',
         }}>
           <div style={{
             width: 60, height: 60, borderRadius: 16,
-            background: 'rgba(201,168,76,0.08)',
-            border: '1px solid rgba(201,168,76,0.15)',
+            background: isDark ? 'rgba(201,168,76,0.08)' : 'rgba(255,130,92,0.08)',
+            border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <HiBookOpen style={{ width: 28, height: 28, color: '#c9a84c' }} />
+            <HiBookOpen style={{ width: 28, height: 28, color: accentColor }} />
           </div>
           <div style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: 18, fontWeight: 700, color: '#e8e2d0', marginBottom: 8,
+            fontSize: 18, fontWeight: 700, color: textMain, marginBottom: 8,
           }}>
             No Courses Yet
           </div>
-          <div style={{ width: 36, height: 2, background: '#c9a84c', margin: '0 auto 12px' }} />
-          <p style={{ fontSize: 13, color: '#3a4a60' }}>
+          <div style={{ width: 36, height: 2, background: accentColor, margin: '0 auto 12px' }} />
+          <p style={{ fontSize: 13, color: textMuted }}>
             Click "Add Course" to create your first course.
           </p>
         </div>
@@ -274,36 +286,36 @@ export default function CourseManagement() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.04 }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.3)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = borderColor}
             >
               {/* Card top row */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 11,
-                  background: 'rgba(201,168,76,0.1)',
-                  border: '1px solid rgba(201,168,76,0.18)',
+                  background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+                  border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.18)' : 'rgba(255,130,92,0.2)'),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <HiBookOpen style={{ width: 19, height: 19, color: '#c9a84c' }} />
+                  <HiBookOpen style={{ width: 19, height: 19, color: accentColor }} />
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
                     onClick={() => openEdit(course)}
                     style={{
                       padding: 6, background: 'none',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      border: '1px solid ' + borderColor,
                       borderRadius: 8, cursor: 'pointer',
-                      color: '#3a4a60', transition: 'all 0.15s',
+                      color: textMuted, transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.color = '#c9a84c';
-                      e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)';
-                      e.currentTarget.style.background = 'rgba(201,168,76,0.08)';
+                      e.currentTarget.style.color = accentColor;
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(201,168,76,0.25)' : 'rgba(255,130,92,0.3)';
+                      e.currentTarget.style.background = isDark ? 'rgba(201,168,76,0.08)' : 'rgba(255,130,92,0.08)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = '#3a4a60';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.color = textMuted;
+                      e.currentTarget.style.borderColor = borderColor;
                       e.currentTarget.style.background = 'none';
                     }}
                   >
@@ -313,9 +325,9 @@ export default function CourseManagement() {
                     onClick={() => handleDelete(course.id)}
                     style={{
                       padding: 6, background: 'none',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      border: '1px solid ' + borderColor,
                       borderRadius: 8, cursor: 'pointer',
-                      color: '#3a4a60', transition: 'all 0.15s',
+                      color: textMuted, transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.color = '#e24b4a';
@@ -323,8 +335,8 @@ export default function CourseManagement() {
                       e.currentTarget.style.background = 'rgba(226,75,74,0.08)';
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = '#3a4a60';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.color = textMuted;
+                      e.currentTarget.style.borderColor = borderColor;
                       e.currentTarget.style.background = 'none';
                     }}
                   >
@@ -336,11 +348,11 @@ export default function CourseManagement() {
               {/* Course info */}
               <div style={{
                 fontFamily: "'Playfair Display', serif",
-                fontSize: 15, fontWeight: 700, color: '#e8e2d0', marginBottom: 3,
+                fontSize: 15, fontWeight: 700, color: textMain, marginBottom: 3,
               }}>
                 {course.courseName}
               </div>
-              <div style={{ fontSize: 11, color: '#3a4a60', marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: textMuted, marginBottom: 12 }}>
                 {course.courseId}
               </div>
 
@@ -350,9 +362,9 @@ export default function CourseManagement() {
                   <span style={{
                     fontSize: 11, fontWeight: 500,
                     padding: '3px 9px', borderRadius: 6,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    color: '#5e6d85',
+                    background: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.secondaryBg,
+                    border: '1px solid ' + borderColor,
+                    color: textMuted,
                   }}>
                     {course.department}
                   </span>
@@ -384,7 +396,7 @@ export default function CourseManagement() {
               {/* Prerequisites */}
               {course.prerequisites?.length > 0 && (
                 <div style={{
-                  fontSize: 10, color: '#2a3548', marginTop: 10,
+                  fontSize: 10, color: textMuted, marginTop: 10,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
                   Prereq: {course.prerequisites.join(', ')}
@@ -419,8 +431,8 @@ export default function CourseManagement() {
               style={{
                 position: 'relative',
                 width: '100%', maxWidth: 520,
-                background: '#0d1425',
-                border: '1px solid rgba(201,168,76,0.15)',
+                background: modalBg,
+                border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
                 borderRadius: 16,
                 overflow: 'hidden',
                 maxHeight: '90vh',
@@ -436,29 +448,29 @@ export default function CourseManagement() {
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '18px 22px',
-                background: 'rgba(201,168,76,0.05)',
-                borderBottom: '1px solid rgba(201,168,76,0.1)',
+                background: isDark ? 'rgba(201,168,76,0.05)' : 'rgba(255,130,92,0.04)',
+                borderBottom: '1px solid ' + (isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.15)'),
                 position: 'sticky', top: 0, zIndex: 10,
                 backdropFilter: 'blur(8px)',
               }}>
                 <div>
                   <div style={{
                     fontFamily: "'Playfair Display', Georgia, serif",
-                    fontSize: 17, fontWeight: 700, color: '#f0ece0',
+                    fontSize: 17, fontWeight: 700, color: textMain,
                   }}>
                     {editing ? 'Edit Course' : 'Add New Course'}
                   </div>
-                  <div style={{ width: 32, height: 2, background: '#c9a84c', marginTop: 6 }} />
+                  <div style={{ width: 32, height: 2, background: accentColor, marginTop: 6 }} />
                 </div>
                 <button
                   onClick={() => setShowForm(false)}
                   style={{
-                    padding: 7, background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: 8, cursor: 'pointer', color: '#3a4a60',
+                    padding: 7, background: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.secondaryBg,
+                    border: '1px solid ' + borderColor,
+                    borderRadius: 8, cursor: 'pointer', color: textMuted,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#e8e2d0'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#3a4a60'}
+                  onMouseEnter={e => e.currentTarget.style.color = textMain}
+                  onMouseLeave={e => e.currentTarget.style.color = textMuted}
                 >
                   <HiXMark style={{ width: 16, height: 16 }} />
                 </button>
@@ -523,33 +535,33 @@ export default function CourseManagement() {
                     onFocus={() => setFocusedField('department')}
                     onBlur={() => setFocusedField('')}
                   >
-                    <option value="" style={{ background: '#080d1a' }}>Select department (optional)</option>
-                    <option value="Computer Science & Engineering" style={{ background: '#080d1a' }}>Computer Science & Engineering</option>
-                    <option value="Electronics & Communication" style={{ background: '#080d1a' }}>Electronics & Communication</option>
-                    <option value="Electrical Engineering" style={{ background: '#080d1a' }}>Electrical Engineering</option>
-                    <option value="Mechanical Engineering" style={{ background: '#080d1a' }}>Mechanical Engineering</option>
-                    <option value="Civil Engineering" style={{ background: '#080d1a' }}>Civil Engineering</option>
-                    <option value="Information Technology" style={{ background: '#080d1a' }}>Information Technology</option>
-                    <option value="Chemical Engineering" style={{ background: '#080d1a' }}>Chemical Engineering</option>
-                    <option value="Biotechnology" style={{ background: '#080d1a' }}>Biotechnology</option>
-                    <option value="Business Administration" style={{ background: '#080d1a' }}>Business Administration</option>
-                    <option value="Mathematics" style={{ background: '#080d1a' }}>Mathematics</option>
-                    <option value="Physics" style={{ background: '#080d1a' }}>Physics</option>
-                    <option value="Chemistry" style={{ background: '#080d1a' }}>Chemistry</option>
-                    <option value="General" style={{ background: '#080d1a' }}>General</option>
+                    <option value="" style={{ background: selectOptionBg }}>Select department (optional)</option>
+                    <option value="Computer Science & Engineering" style={{ background: selectOptionBg }}>Computer Science & Engineering</option>
+                    <option value="Electronics & Communication" style={{ background: selectOptionBg }}>Electronics & Communication</option>
+                    <option value="Electrical Engineering" style={{ background: selectOptionBg }}>Electrical Engineering</option>
+                    <option value="Mechanical Engineering" style={{ background: selectOptionBg }}>Mechanical Engineering</option>
+                    <option value="Civil Engineering" style={{ background: selectOptionBg }}>Civil Engineering</option>
+                    <option value="Information Technology" style={{ background: selectOptionBg }}>Information Technology</option>
+                    <option value="Chemical Engineering" style={{ background: selectOptionBg }}>Chemical Engineering</option>
+                    <option value="Biotechnology" style={{ background: selectOptionBg }}>Biotechnology</option>
+                    <option value="Business Administration" style={{ background: selectOptionBg }}>Business Administration</option>
+                    <option value="Mathematics" style={{ background: selectOptionBg }}>Mathematics</option>
+                    <option value="Physics" style={{ background: selectOptionBg }}>Physics</option>
+                    <option value="Chemistry" style={{ background: selectOptionBg }}>Chemistry</option>
+                    <option value="General" style={{ background: selectOptionBg }}>General</option>
                   </select>
                 </div>
 
                 {/* Timetable Slot */}
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <HiCalendarDays style={{ width: 13, height: 13, color: '#c9a84c' }} />
+                    <HiCalendarDays style={{ width: 13, height: 13, color: accentColor }} />
                     Timetable Slot
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                     {/* Day */}
                     <div>
-                      <div style={{ fontSize: 10, color: '#2a3548', marginBottom: 5, fontWeight: 500 }}>Day</div>
+                      <div style={{ fontSize: 10, color: textMuted, marginBottom: 5, fontWeight: 500 }}>Day</div>
                       <select
                         value={form.day}
                         onChange={e => setForm({ ...form, day: e.target.value })}
@@ -557,18 +569,18 @@ export default function CourseManagement() {
                         onFocus={() => setFocusedField('day')}
                         onBlur={() => setFocusedField('')}
                       >
-                        <option value="" style={{ background: '#080d1a' }}>— Day —</option>
-                        <option value="Monday" style={{ background: '#080d1a' }}>Monday</option>
-                        <option value="Tuesday" style={{ background: '#080d1a' }}>Tuesday</option>
-                        <option value="Wednesday" style={{ background: '#080d1a' }}>Wednesday</option>
-                        <option value="Thursday" style={{ background: '#080d1a' }}>Thursday</option>
-                        <option value="Friday" style={{ background: '#080d1a' }}>Friday</option>
-                        <option value="Saturday" style={{ background: '#080d1a' }}>Saturday</option>
+                        <option value="" style={{ background: selectOptionBg }}>— Day —</option>
+                        <option value="Monday" style={{ background: selectOptionBg }}>Monday</option>
+                        <option value="Tuesday" style={{ background: selectOptionBg }}>Tuesday</option>
+                        <option value="Wednesday" style={{ background: selectOptionBg }}>Wednesday</option>
+                        <option value="Thursday" style={{ background: selectOptionBg }}>Thursday</option>
+                        <option value="Friday" style={{ background: selectOptionBg }}>Friday</option>
+                        <option value="Saturday" style={{ background: selectOptionBg }}>Saturday</option>
                       </select>
                     </div>
                     {/* Start Time */}
                     <div>
-                      <div style={{ fontSize: 10, color: '#2a3548', marginBottom: 5, fontWeight: 500 }}>Start</div>
+                      <div style={{ fontSize: 10, color: textMuted, marginBottom: 5, fontWeight: 500 }}>Start</div>
                       <select
                         value={form.startTime}
                         onChange={e => setForm({ ...form, startTime: e.target.value })}
@@ -576,9 +588,9 @@ export default function CourseManagement() {
                         onFocus={() => setFocusedField('startTime')}
                         onBlur={() => setFocusedField('')}
                       >
-                        <option value="" style={{ background: '#080d1a' }}>— Start —</option>
+                        <option value="" style={{ background: selectOptionBg }}>— Start —</option>
                         {TIME_SLOTS.map(t => (
-                          <option key={t.value} value={t.value} style={{ background: '#080d1a' }}>
+                          <option key={t.value} value={t.value} style={{ background: selectOptionBg }}>
                             {t.label}
                           </option>
                         ))}
@@ -586,7 +598,7 @@ export default function CourseManagement() {
                     </div>
                     {/* End Time */}
                     <div>
-                      <div style={{ fontSize: 10, color: '#2a3548', marginBottom: 5, fontWeight: 500 }}>End</div>
+                      <div style={{ fontSize: 10, color: textMuted, marginBottom: 5, fontWeight: 500 }}>End</div>
                       <select
                         value={form.endTime}
                         onChange={e => setForm({ ...form, endTime: e.target.value })}
@@ -594,11 +606,11 @@ export default function CourseManagement() {
                         onFocus={() => setFocusedField('endTime')}
                         onBlur={() => setFocusedField('')}
                       >
-                        <option value="" style={{ background: '#080d1a' }}>— End —</option>
+                        <option value="" style={{ background: selectOptionBg }}>— End —</option>
                         {TIME_SLOTS
                           .filter(t => !form.startTime || t.value > form.startTime)
                           .map(t => (
-                            <option key={t.value} value={t.value} style={{ background: '#080d1a' }}>
+                            <option key={t.value} value={t.value} style={{ background: selectOptionBg }}>
                               {t.label}
                             </option>
                           ))}
@@ -611,10 +623,10 @@ export default function CourseManagement() {
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 7,
                       marginTop: 10, padding: '7px 12px',
-                      background: 'rgba(201,168,76,0.06)',
-                      border: '1px solid rgba(201,168,76,0.15)',
+                      background: isDark ? 'rgba(201,168,76,0.06)' : 'rgba(255,130,92,0.06)',
+                      border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
                       borderRadius: 8,
-                      fontSize: 11, fontWeight: 500, color: '#c9a84c',
+                      fontSize: 11, fontWeight: 500, color: accentColor,
                     }}>
                       <HiCalendarDays style={{ width: 13, height: 13 }} />
                       {form.day} · {TIME_SLOTS.find(t => t.value === form.startTime)?.label} – {TIME_SLOTS.find(t => t.value === form.endTime)?.label}
@@ -626,7 +638,7 @@ export default function CourseManagement() {
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelStyle}>
                     Prerequisites{' '}
-                    <span style={{ color: '#2a3548', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+                    <span style={{ color: textMuted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
                       (comma-separated)
                     </span>
                   </label>
@@ -642,7 +654,7 @@ export default function CourseManagement() {
                 </div>
 
                 {/* Gold divider */}
-                <div style={{ height: 1, background: 'rgba(201,168,76,0.1)', marginBottom: 20 }} />
+                <div style={{ height: 1, background: isDark ? 'rgba(201,168,76,0.1)' : theme.colors.border, marginBottom: 20 }} />
 
                 {/* Submit */}
                 <button
@@ -650,8 +662,8 @@ export default function CourseManagement() {
                   disabled={saving}
                   style={{
                     width: '100%', padding: '13px',
-                    background: saving ? 'rgba(201,168,76,0.15)' : '#c9a84c',
-                    color: saving ? '#3a4a60' : '#080d1a',
+                    background: saving ? (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)') : accentColor,
+                    color: saving ? textMuted : '#080d1a',
                     fontSize: 14, fontWeight: 700,
                     border: 'none', borderRadius: 10,
                     cursor: saving ? 'not-allowed' : 'pointer',
@@ -662,8 +674,8 @@ export default function CourseManagement() {
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                       <span style={{
                         width: 14, height: 14,
-                        border: '2px solid #3a4a60',
-                        borderTopColor: '#c9a84c',
+                        border: '2px solid ' + textMuted,
+                        borderTopColor: accentColor,
                         borderRadius: '50%',
                         display: 'inline-block',
                         animation: 'spin 0.7s linear infinite',
