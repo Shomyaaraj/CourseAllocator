@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,6 +22,9 @@ import StudentPreferences from './pages/admin/StudentPreferences';
 import AllocationPage from './pages/admin/AllocationPage';
 import ReportsPage from './pages/admin/ReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+
+// Theme
+import ThemeToggle from "./components/ThemeToggle";
 
 function AuthRedirect() {
   const { currentUser, userProfile, loading } = useAuth();
@@ -55,6 +59,10 @@ export default function App() {
             },
           }}
         />
+
+        {/* ✅ ThemeToggle Routes ke bahar, sab pages pe dikhega */}
+        <ThemeToggle />
+
         <Routes>
           <Route path="/" element={<AuthRedirect />} />
           <Route path="/login" element={<LoginPage />} />

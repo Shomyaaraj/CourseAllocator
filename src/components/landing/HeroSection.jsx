@@ -1,29 +1,35 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiArrowRight } from 'react-icons/hi2';
+import { useTheme } from 'styled-components';
 
 const steps = ['Course Selection', 'Smart Ranking', 'Auto Allocation'];
 
 export default function HeroSection() {
+  const theme = useTheme();
+  const isDark = theme.mode === 'dark';
+
   return (
     <section style={{
       minHeight: '100vh',
-      background: '#0a0f1e',
-      backgroundImage: `
-        linear-gradient(rgba(180,160,100,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(180,160,100,0.03) 1px, transparent 1px)
-      `,
+      background: isDark ? '#0a0f1e' : theme.colors.background,
+      backgroundImage: isDark
+        ? 'linear-gradient(rgba(180,160,100,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(180,160,100,0.03) 1px, transparent 1px)'
+        : 'linear-gradient(rgba(24,33,109,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(24,33,109,0.03) 1px, transparent 1px)',
       backgroundSize: '56px 56px',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative', overflow: 'hidden',
       fontFamily: "'DM Sans', sans-serif",
     }}>
+
       {/* Glow */}
       <div style={{
         position: 'absolute', top: '40%', left: '50%',
         transform: 'translate(-50%, -50%)',
         width: 700, height: 400,
-        background: 'radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)',
+        background: isDark
+          ? 'radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)'
+          : 'radial-gradient(ellipse, rgba(255,130,92,0.08) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
@@ -41,14 +47,14 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.1 }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(201,168,76,0.08)',
-            border: '1px solid rgba(201,168,76,0.2)',
+            background: isDark ? 'rgba(201,168,76,0.08)' : 'rgba(255,130,92,0.08)',
+            border: isDark ? '1px solid rgba(201,168,76,0.2)' : '1px solid rgba(255,130,92,0.3)',
             padding: '6px 16px', borderRadius: 100,
             marginBottom: 28,
           }}
         >
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c9a84c', display: 'inline-block' }} />
-          <span style={{ fontSize: 12, color: '#c9a84c', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.accent, display: 'inline-block' }} />
+          <span style={{ fontSize: 12, color: theme.colors.accent, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Vignan University
           </span>
         </motion.div>
@@ -61,12 +67,13 @@ export default function HeroSection() {
           style={{
             fontFamily: "'Playfair Display', Georgia, serif",
             fontSize: 'clamp(36px, 5.5vw, 62px)',
-            fontWeight: 700, color: '#f0ece0',
+            fontWeight: 700,
+            color: isDark ? '#f0ece0' : theme.colors.primary,
             lineHeight: 1.15, margin: '0 0 20px',
           }}
         >
           Smart Course{' '}
-          <em style={{ fontStyle: 'normal', color: '#c9a84c' }}>Allocation</em>
+          <em style={{ fontStyle: 'normal', color: theme.colors.accent }}>Allocation</em>
           <br />Made Simple
         </motion.h1>
 
@@ -76,7 +83,8 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           style={{
-            fontSize: 16, color: '#5e6d85',
+            fontSize: 16,
+            color: theme.colors.textLight,
             lineHeight: 1.75, maxWidth: 500,
             margin: '0 auto 36px',
           }}
@@ -96,7 +104,7 @@ export default function HeroSection() {
             to="/register"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '13px 28px', background: '#c9a84c',
+              padding: '13px 28px', background: theme.colors.accent,
               color: '#0a0f1e', fontSize: 14, fontWeight: 600,
               borderRadius: 10, textDecoration: 'none', letterSpacing: '0.02em',
             }}
@@ -108,8 +116,8 @@ export default function HeroSection() {
             style={{
               display: 'inline-flex', alignItems: 'center',
               padding: '13px 28px', background: 'transparent',
-              color: '#8a94a8', fontSize: 14,
-              border: '1px solid rgba(255,255,255,0.1)',
+              color: theme.colors.textLight, fontSize: 14,
+              border: '1px solid ' + theme.colors.border,
               borderRadius: 10, textDecoration: 'none',
             }}
           >
@@ -124,24 +132,28 @@ export default function HeroSection() {
           transition={{ duration: 0.7, delay: 0.7 }}
           style={{
             display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 1, background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            gap: 1,
+            background: isDark ? 'rgba(255,255,255,0.05)' : theme.colors.border,
+            border: '1px solid ' + theme.colors.border,
             borderRadius: 16, overflow: 'hidden',
             maxWidth: 620, margin: '0 auto',
           }}
         >
           {steps.map((step, i) => (
-            <div key={step} style={{ background: '#0d1425', padding: '28px 24px' }}>
+            <div key={step} style={{
+              background: isDark ? '#0d1425' : theme.colors.cardBg,
+              padding: '28px 24px',
+            }}>
               <div style={{
                 width: 32, height: 32,
-                background: 'rgba(201,168,76,0.1)',
-                border: '1px solid rgba(201,168,76,0.2)',
+                background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+                border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.3)'),
                 borderRadius: 8, display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 600, color: '#c9a84c',
+                fontSize: 13, fontWeight: 600, color: theme.colors.accent,
                 marginBottom: 12,
               }}>{i + 1}</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#8a94a8' }}>{step}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: theme.colors.textLight }}>{step}</div>
             </div>
           ))}
         </motion.div>
