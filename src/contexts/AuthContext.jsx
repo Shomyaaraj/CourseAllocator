@@ -35,19 +35,15 @@ export function AuthProvider({ children }) {
       allocatedCourse: null,
       createdAt: new Date().toISOString()
     };
-    // Save profile data locally immediately
     setUserProfile(userDoc);
-    // Attempt to write to Firestore in the background, without blocking
     setDoc(doc(db, 'users', cred.user.uid), userDoc)
       .catch(err => {
         console.error('Error writing user profile to Firestore in background:', err);
-        // Here you might implement a retry mechanism or notify the user
       });
     return cred;
   }
 
   async function signupAdmin(email, password, profileData, inviteCode) {
-    // Validate invite code from Firestore
     const configRef = doc(db, 'config', 'adminInvite');
     const configSnap = await getDoc(configRef);
     if (!configSnap.exists()) {
@@ -61,7 +57,6 @@ export function AuthProvider({ children }) {
       throw { code: 'admin/code-exhausted', message: 'Invite code has been fully used.' };
     }
 
-    // Create Firebase Auth user
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const userDoc = {
       uid: cred.user.uid,
@@ -74,7 +69,6 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString()
     };
 
-    // Save to Firestore & decrement invite usage
     await setDoc(doc(db, 'users', cred.user.uid), userDoc);
     if (usesLeft !== undefined) {
       await updateDoc(configRef, { usesLeft: increment(-1) });
@@ -84,8 +78,33 @@ export function AuthProvider({ children }) {
     return cred;
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  // ✅ FIXED: login now throws user-friendly errors
+  async function login(email, password) {
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          // Fired when Email Enumeration Protection is ON
+          // Covers both wrong password and non-existent email
+          throw new Error('Invalid email or password. Please try again.');
+
+        case 'auth/invalid-email':
+          throw new Error('Please enter a valid email address.');
+
+        case 'auth/user-disabled':
+          throw new Error('This account has been disabled. Please contact support.');
+
+        case 'auth/too-many-requests':
+          throw new Error('Too many failed attempts. Please try again later.');
+
+        case 'auth/network-request-failed':
+          throw new Error('Network error. Please check your internet connection.');
+
+        default:
+          throw new Error('Login failed. Please try again.');
+      }
+    }
   }
 
   function logout() {
@@ -96,23 +115,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      setLoading(false); // Set loading to false immediately after auth state is known
+      setLoading(false);
 
       if (user) {
-        // Fetch user profile in the background, without blocking the main flow
         getDoc(doc(db, 'users', user.uid))
           .then(docSnap => {
             if (docSnap.exists()) {
               setUserProfile(docSnap.data());
             } else {
-              // If profile doesn't exist in Firestore, store a basic profile in memory
-              // This might happen if signup failed to write to Firestore initially
               setUserProfile(prev => prev || { uid: user.uid, email: user.email, role: 'student' });
             }
           })
           .catch(err => {
             console.error('Error fetching user profile from Firestore in background:', err);
-            // If Firestore is unavailable or fails, store a basic profile in memory
             setUserProfile(prev => prev || { uid: user.uid, email: user.email, role: 'student' });
           });
       } else {
