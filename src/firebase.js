@@ -1,20 +1,22 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
-// Firebase configuration for vuca-course-allocation-app
 const firebaseConfig = {
-  apiKey: "AIzaSyA8Z76pLvgw8tydMIn_JNSdl4X74zu8Qcc",
-  authDomain: "vuca-course-allocation-app.firebaseapp.com",
-  projectId: "vuca-course-allocation-app",
-  storageBucket: "vuca-course-allocation-app.firebasestorage.app",
-  messagingSenderId: "755086485622",
-  appId: "1:755086485622:web:dd8d0405a109f5798e5757"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
+
+// ✅ IMPORTANT exports
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
 export default app;
