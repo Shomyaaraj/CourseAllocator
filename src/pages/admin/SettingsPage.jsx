@@ -157,7 +157,7 @@ export default function SettingsPage() {
 
   return (
     <motion.div
-      style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 16 }}
+      style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 600, display: 'flex',margin:'0 auto', flexDirection: 'column', gap: 16 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

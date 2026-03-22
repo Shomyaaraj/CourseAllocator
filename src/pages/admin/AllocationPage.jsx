@@ -138,24 +138,88 @@ export default function AllocationPage() {
   }
 
   async function handleOverride(alloc, newCourseId) {
-    if (!newCourseId) return;
-    const courseObj = courses.find(c => (c.courseId || c.id) === newCourseId);
-    const courseName = courseObj?.courseName || newCourseId;
-    try {
-      const allocSnap = await getDocs(collection(db, 'allocations'));
-      const allocDoc = allocSnap.docs.find(d => d.data().studentId === alloc.studentId);
-      const b = writeBatch(db);
-      if (allocDoc) {
-        b.update(allocDoc.ref, { allocatedCourse: newCourseId, courseName, overridden: true });
-      }
-      b.update(doc(db, 'users', alloc.studentId), { allocatedCourse: newCourseId });
-      await b.commit();
-      toast.success('Override saved');
-      fetchData();
-    } catch {
-      toast.error('Override failed');
+  if (!newCourseId) return;
+
+  const student = students.find(s => s.id === alloc.studentId);
+  const newCourse = courses.find(c => (c.courseId || c.id) === newCourseId);
+  const oldCourse = courses.find(c => (c.courseId || c.id) === alloc.allocatedCourse);
+
+  if (!student || !newCourse) {
+    toast.error("Invalid data");
+    return;
+  }
+
+  // 🔹 1. Seat Check
+  if ((newCourse.remainingSeats ?? 0) <= 0) {
+    toast.error("No seats available in selected course");
+    return;
+  }
+
+  // 🔹 2. Prerequisite Check
+  if (newCourse.prerequisites?.length > 0) {
+    const done = student.completedCourses || [];
+    const ok = newCourse.prerequisites.every(p => done.includes(p));
+    if (!ok) {
+      toast.error("Prerequisites not satisfied");
+      return;
     }
   }
+
+  // 🔹 3. Timetable Clash Check
+  if (newCourse.timetableSlot && student.allocatedCourse) {
+    const occupiedSlot = courses.find(
+      c => (c.courseId || c.id) === student.allocatedCourse
+    )?.timetableSlot;
+
+    if (occupiedSlot === newCourse.timetableSlot) {
+      toast.error("Timetable clash detected");
+      return;
+    }
+  }
+
+  try {
+    const allocSnap = await getDocs(collection(db, 'allocations'));
+    const allocDoc = allocSnap.docs.find(d => d.data().studentId === alloc.studentId);
+
+    const b = writeBatch(db);
+
+    // 🔹 4. Update allocation
+    if (allocDoc) {
+      b.update(allocDoc.ref, {
+        allocatedCourse: newCourseId,
+        courseName: newCourse.courseName,
+        overridden: true,
+      });
+    }
+
+    // 🔹 5. Update student
+    b.update(doc(db, 'users', alloc.studentId), {
+      allocatedCourse: newCourseId,
+    });
+
+    // 🔹 6. Update course seats
+    if (oldCourse) {
+      const oldCourseRef = doc(db, 'courses', oldCourse.id);
+      b.update(oldCourseRef, {
+        remainingSeats: (oldCourse.remainingSeats ?? 0) + 1,
+      });
+    }
+
+    const newCourseRef = doc(db, 'courses', newCourse.id);
+    b.update(newCourseRef, {
+      remainingSeats: (newCourse.remainingSeats ?? 0) - 1,
+    });
+
+    await b.commit();
+
+    toast.success("Override applied safely ✅");
+    fetchData();
+
+  } catch (e) {
+    console.error(e);
+    toast.error("Override failed");
+  }
+}
 
   const allocated = allocations.filter(a => a.allocatedCourse);
   const unallocated = allocations.filter(a => !a.allocatedCourse);
