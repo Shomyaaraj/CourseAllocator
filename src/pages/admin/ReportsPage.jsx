@@ -306,14 +306,35 @@ export default function ReportsPage() {
             {enrollmentData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={enrollmentData} margin={{ left: -10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
-                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                  <Tooltip {...tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: isDark ? '#8a94a8' : theme.colors.textLight, paddingTop: 8 }} />
-                  <Bar dataKey="capacity" fill={isDark ? 'rgba(110,126,152,0.35)' : 'rgba(24,33,109,0.1)'} radius={[4, 4, 0, 0]} name="Capacity" />
-                  <Bar dataKey="enrolled" fill={accentColor} radius={[4, 4, 0, 0]} name="Enrolled" />
-                </BarChart>
+  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+  
+  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
+  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+  
+  <Tooltip {...tooltipStyle} />
+  
+  <Legend 
+    wrapperStyle={{ 
+      fontSize: 12, 
+      color: isDark ? '#8a94a8' : theme.colors.textLight, 
+      paddingTop: 8 
+    }} 
+  />
+
+  <Bar
+    dataKey="capacity"
+    fill={isDark ? 'rgba(255,255,255,0.18)' : '#94A3B8'}
+    radius={[4, 4, 0, 0]}
+    name="Capacity"
+  />
+
+  <Bar
+    dataKey="enrolled"
+    fill={accentColor}
+    radius={[4, 4, 0, 0]}
+    name="Enrolled"
+  />
+</BarChart>
               </ResponsiveContainer>
             ) : (
               <div style={{ textAlign: 'center', padding: '48px 0', color: textMuted, fontSize: 13 }}>No data</div>

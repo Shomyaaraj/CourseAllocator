@@ -329,8 +329,19 @@ function AdminOverview() {
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: textMuted }} axisLine={{ stroke: borderColor }} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: textMuted }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }} />
-                  <Bar dataKey="capacity" fill={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(24,33,109,0.06)'} radius={[4, 4, 0, 0]} name="Capacity" />
-                  <Bar dataKey="enrolled" fill={accentColor} radius={[4, 4, 0, 0]} name="Enrolled" />
+                  <Bar
+  dataKey="capacity"
+  fill={isDark ? 'rgba(255,255,255,0.2)' : '#64748B'}
+  radius={[4, 4, 0, 0]}
+  name="Capacity"
+/>
+
+<Bar
+  dataKey="enrolled"
+  fill="#FF825C"
+  radius={[4, 4, 0, 0]}
+  name="Enrolled"
+/>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
