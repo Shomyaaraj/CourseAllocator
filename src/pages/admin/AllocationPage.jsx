@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
 import { runAllocation } from '../../utils/allocationEngine';
+import { useTheme } from 'styled-components';
 import {
   HiCpuChip, HiPlay, HiCheckBadge, HiExclamationTriangle,
   HiChartBar, HiInformationCircle, HiUsers,
@@ -10,42 +11,55 @@ import {
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 
-const pageStyle = {
-  fontFamily: "'DM Sans', sans-serif",
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 16,
-};
-
-const cardStyle = {
-  background: '#0d1425',
-  border: '1px solid rgba(255,255,255,0.06)',
-  borderRadius: 14,
-  overflow: 'hidden',
-};
-
-const thStyle = {
-  textAlign: 'left',
-  fontSize: 10,
-  fontWeight: 600,
-  color: '#3a4a60',
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  padding: '11px 16px',
-  background: '#080d1a',
-  borderBottom: '1px solid rgba(255,255,255,0.05)',
-  whiteSpace: 'nowrap',
-};
-
-const tdStyle = {
-  padding: '12px 16px',
-  fontSize: 13,
-  color: '#8a94a8',
-  borderBottom: '1px solid rgba(255,255,255,0.03)',
-  verticalAlign: 'middle',
-};
-
 export default function AllocationPage() {
+  const theme = useTheme();
+  const isDark = theme.mode === 'dark';
+
+  const accentColor = theme.colors.accent;
+  const textMain = isDark ? '#e8e2d0' : theme.colors.primary;
+  const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
+  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
+  const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
+  const mainBg = isDark ? '#080d1a' : theme.colors.background;
+  const rowHoverBg = isDark ? 'rgba(255,255,255,0.02)' : theme.colors.secondaryBg;
+  const selectBg = isDark ? '#080d1a' : theme.colors.secondaryBg;
+  const selectOptionBg = isDark ? '#080d1a' : '#ffffff';
+
+  const pageStyle = {
+    fontFamily: "'DM Sans', sans-serif",
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  };
+
+  const cardStyle = {
+    background: cardBg,
+    border: '1px solid ' + borderColor,
+    borderRadius: 14,
+    overflow: 'hidden',
+  };
+
+  const thStyle = {
+    textAlign: 'left',
+    fontSize: 10,
+    fontWeight: 600,
+    color: textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    padding: '11px 16px',
+    background: isDark ? '#080d1a' : theme.colors.secondaryBg,
+    borderBottom: '1px solid ' + borderColor,
+    whiteSpace: 'nowrap',
+  };
+
+  const tdStyle = {
+    padding: '12px 16px',
+    fontSize: 13,
+    color: isDark ? '#8a94a8' : textMuted,
+    borderBottom: '1px solid ' + (isDark ? 'rgba(255,255,255,0.03)' : borderColor),
+    verticalAlign: 'middle',
+  };
+
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [allocations, setAllocations] = useState([]);
@@ -161,9 +175,9 @@ export default function AllocationPage() {
   }
 
   function prefBadgeStyle(rank) {
-    if (rank === 1) return { background: 'rgba(201,168,76,0.12)', color: '#c9a84c', border: '1px solid rgba(201,168,76,0.2)' };
+    if (rank === 1) return { background: isDark ? 'rgba(201,168,76,0.12)' : 'rgba(255,130,92,0.12)', color: accentColor, border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)') };
     if (rank === 2) return { background: 'rgba(55,138,221,0.1)', color: '#378add', border: '1px solid rgba(55,138,221,0.15)' };
-    return { background: 'rgba(255,255,255,0.04)', color: '#5e6d85', border: '1px solid rgba(255,255,255,0.07)' };
+    return { background: isDark ? 'rgba(255,255,255,0.04)' : theme.colors.secondaryBg, color: textMuted, border: '1px solid ' + borderColor };
   }
 
   if (loading) {
@@ -171,8 +185,8 @@ export default function AllocationPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 36, height: 36,
-          border: '3px solid rgba(201,168,76,0.15)',
-          borderTopColor: '#c9a84c',
+          border: '3px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)'),
+          borderTopColor: accentColor,
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -192,30 +206,29 @@ export default function AllocationPage() {
       {/* ── Algorithm Info Banner ── */}
       <div style={{
         ...cardStyle,
-        background: '#0d1425',
-        border: '1px solid rgba(201,168,76,0.15)',
+        border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
         padding: '20px 22px',
-        backgroundImage: `linear-gradient(rgba(180,160,100,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(180,160,100,0.025) 1px, transparent 1px)`,
+        backgroundImage: 'linear-gradient(rgba(180,160,100,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(180,160,100,0.025) 1px, transparent 1px)',
         backgroundSize: '48px 48px',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <div style={{
             width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: 'rgba(201,168,76,0.1)',
-            border: '1px solid rgba(201,168,76,0.2)',
+            background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+            border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <HiCpuChip style={{ width: 22, height: 22, color: '#c9a84c' }} />
+            <HiCpuChip style={{ width: 22, height: 22, color: accentColor }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontFamily: "'Playfair Display', Georgia, serif",
-              fontSize: 16, fontWeight: 700, color: '#f0ece0', marginBottom: 6,
+              fontSize: 16, fontWeight: 700, color: textMain, marginBottom: 6,
             }}>
               Gale-Shapley Stable Matching Algorithm
             </div>
-            <div style={{ width: 40, height: 2, background: '#c9a84c', marginBottom: 10 }} />
-            <p style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.7, margin: 0 }}>
+            <div style={{ width: 40, height: 2, background: accentColor, marginBottom: 10 }} />
+            <p style={{ fontSize: 13, color: textMuted, lineHeight: 1.7, margin: 0 }}>
               Students propose to courses in preference order. Courses accept the highest-CGPA
               students and eject lower-priority students when seats fill. This guarantees
               stability — no student and course would mutually prefer each other over their
@@ -232,7 +245,7 @@ export default function AllocationPage() {
               background: running || studentsWithPrefs.length === 0
                 ? 'rgba(29,158,117,0.15)'
                 : '#1d9e75',
-              color: running || studentsWithPrefs.length === 0 ? '#3a4a60' : '#080d1a',
+              color: running || studentsWithPrefs.length === 0 ? textMuted : '#080d1a',
               fontSize: 13, fontWeight: 700,
               border: 'none', borderRadius: 10,
               cursor: running || studentsWithPrefs.length === 0 ? 'not-allowed' : 'pointer',
@@ -246,7 +259,7 @@ export default function AllocationPage() {
               <>
                 <span style={{
                   width: 14, height: 14,
-                  border: '2px solid #3a4a60',
+                  border: '2px solid ' + textMuted,
                   borderTopColor: '#1d9e75',
                   borderRadius: '50%',
                   display: 'inline-block',
@@ -276,10 +289,10 @@ export default function AllocationPage() {
           }}>
             <HiUsers style={{ width: 17, height: 17, color: '#378add' }} />
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#e8e2d0', lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: textMain, lineHeight: 1 }}>
             {students.length}
           </div>
-          <div style={{ fontSize: 11, color: '#3a4a60', fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Total Students
           </div>
         </div>
@@ -294,10 +307,10 @@ export default function AllocationPage() {
           }}>
             <HiAcademicCap style={{ width: 17, height: 17, color: '#7f77dd' }} />
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#e8e2d0', lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: textMain, lineHeight: 1 }}>
             {studentsWithPrefs.length}
           </div>
-          <div style={{ fontSize: 11, color: '#3a4a60', fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             With Preferences
           </div>
         </div>
@@ -306,16 +319,16 @@ export default function AllocationPage() {
         <div style={{ ...cardStyle, padding: '18px' }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, marginBottom: 12,
-            background: 'rgba(201,168,76,0.1)',
-            border: '1px solid rgba(201,168,76,0.15)',
+            background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+            border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <HiBookOpen style={{ width: 17, height: 17, color: '#c9a84c' }} />
+            <HiBookOpen style={{ width: 17, height: 17, color: accentColor }} />
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#e8e2d0', lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: textMain, lineHeight: 1 }}>
             {courses.length}
           </div>
-          <div style={{ fontSize: 11, color: '#3a4a60', fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Courses Available
           </div>
         </div>
@@ -330,10 +343,10 @@ export default function AllocationPage() {
           }}>
             <HiExclamationTriangle style={{ width: 17, height: 17, color: '#ba7517' }} />
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#e8e2d0', lineHeight: 1 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: textMain, lineHeight: 1 }}>
             {studentsWithoutPrefs.length}
           </div>
-          <div style={{ fontSize: 11, color: '#3a4a60', fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             No Preferences
           </div>
         </div>
@@ -343,21 +356,22 @@ export default function AllocationPage() {
       {hasRun && (
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 1, background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          gap: 1,
+          background: isDark ? 'rgba(255,255,255,0.05)' : borderColor,
+          border: '1px solid ' + borderColor,
           borderRadius: 14, overflow: 'hidden',
         }}>
           {/* Processed */}
-          <div style={{ background: '#0d1425', padding: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ background: cardBg, padding: '20px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 8 }}>
               Processed
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: '#e8e2d0' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: textMain }}>
               {allocations.length}
             </div>
           </div>
           {/* Allocated */}
-          <div style={{ background: '#0d1425', padding: '20px', textAlign: 'center', borderLeft: '1px solid rgba(29,158,117,0.15)', borderRight: '1px solid rgba(29,158,117,0.15)' }}>
+          <div style={{ background: cardBg, padding: '20px', textAlign: 'center', borderLeft: '1px solid rgba(29,158,117,0.15)', borderRight: '1px solid rgba(29,158,117,0.15)' }}>
             <div style={{ fontSize: 11, color: '#1d9e75', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 8 }}>
               Allocated
             </div>
@@ -366,7 +380,7 @@ export default function AllocationPage() {
             </div>
           </div>
           {/* Unallocated */}
-          <div style={{ background: '#0d1425', padding: '20px', textAlign: 'center' }}>
+          <div style={{ background: cardBg, padding: '20px', textAlign: 'center' }}>
             <div style={{ fontSize: 11, color: '#e24b4a', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 8 }}>
               Unallocated
             </div>
@@ -385,20 +399,20 @@ export default function AllocationPage() {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '16px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid ' + borderColor,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <HiChartBar style={{ width: 15, height: 15, color: '#c9a84c' }} />
+              <HiChartBar style={{ width: 15, height: 15, color: accentColor }} />
               <span style={{
                 fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: 15, fontWeight: 700, color: '#e8e2d0',
+                fontSize: 15, fontWeight: 700, color: textMain,
               }}>
                 Allocation Results
               </span>
               <span style={{
-                fontSize: 11, fontWeight: 600, color: '#c9a84c',
-                background: 'rgba(201,168,76,0.1)',
-                border: '1px solid rgba(201,168,76,0.2)',
+                fontSize: 11, fontWeight: 600, color: accentColor,
+                background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+                border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
                 padding: '2px 8px', borderRadius: 100,
               }}>
                 {displayedAllocations.length}
@@ -408,8 +422,8 @@ export default function AllocationPage() {
             {/* Filter tabs */}
             <div style={{
               display: 'flex', gap: 4,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: isDark ? 'rgba(255,255,255,0.03)' : theme.colors.secondaryBg,
+              border: '1px solid ' + borderColor,
               borderRadius: 9, padding: 3,
             }}>
               <button
@@ -417,8 +431,8 @@ export default function AllocationPage() {
                 style={{
                   padding: '5px 12px', fontSize: 11, fontWeight: 600,
                   borderRadius: 7, border: 'none', cursor: 'pointer',
-                  background: filter === 'all' ? '#c9a84c' : 'transparent',
-                  color: filter === 'all' ? '#080d1a' : '#3a4a60',
+                  background: filter === 'all' ? accentColor : 'transparent',
+                  color: filter === 'all' ? '#080d1a' : textMuted,
                   transition: 'all 0.15s',
                 }}
               >
@@ -430,7 +444,7 @@ export default function AllocationPage() {
                   padding: '5px 12px', fontSize: 11, fontWeight: 600,
                   borderRadius: 7, border: 'none', cursor: 'pointer',
                   background: filter === 'allocated' ? 'rgba(29,158,117,0.2)' : 'transparent',
-                  color: filter === 'allocated' ? '#1d9e75' : '#3a4a60',
+                  color: filter === 'allocated' ? '#1d9e75' : textMuted,
                   transition: 'all 0.15s',
                 }}
               >
@@ -442,7 +456,7 @@ export default function AllocationPage() {
                   padding: '5px 12px', fontSize: 11, fontWeight: 600,
                   borderRadius: 7, border: 'none', cursor: 'pointer',
                   background: filter === 'unallocated' ? 'rgba(226,75,74,0.15)' : 'transparent',
-                  color: filter === 'unallocated' ? '#e24b4a' : '#3a4a60',
+                  color: filter === 'unallocated' ? '#e24b4a' : textMuted,
                   transition: 'all 0.15s',
                 }}
               >
@@ -470,7 +484,7 @@ export default function AllocationPage() {
                   <tr
                     key={idx}
                     style={{ transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    onMouseEnter={e => e.currentTarget.style.background = rowHoverBg}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     {/* Student */}
@@ -478,14 +492,14 @@ export default function AllocationPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                          background: 'rgba(201,168,76,0.1)',
-                          border: '1px solid rgba(201,168,76,0.2)',
+                          background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+                          border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 12, fontWeight: 700, color: '#c9a84c',
+                          fontSize: 12, fontWeight: 700, color: accentColor,
                         }}>
                           {alloc.studentName?.charAt(0) || '?'}
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#e8e2d0' }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: textMain }}>
                           {alloc.studentName}
                         </span>
                       </div>
@@ -505,7 +519,7 @@ export default function AllocationPage() {
                           {Number(alloc.cgpa).toFixed(2)}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 12, color: '#2a3548' }}>—</span>
+                        <span style={{ fontSize: 12, color: textMuted }}>—</span>
                       )}
                     </td>
 
@@ -518,11 +532,11 @@ export default function AllocationPage() {
                     <td style={tdStyle}>
                       {alloc.allocatedCourse ? (
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e2d0' }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: textMain }}>
                             {alloc.courseName || alloc.allocatedCourse}
                           </div>
                           {alloc.timetableSlot && (
-                            <div style={{ fontSize: 10, color: '#3a4a60', marginTop: 2 }}>
+                            <div style={{ fontSize: 10, color: textMuted, marginTop: 2 }}>
                               {alloc.timetableSlot}
                             </div>
                           )}
@@ -552,7 +566,7 @@ export default function AllocationPage() {
                           #{alloc.preferenceRank}
                         </span>
                       ) : (
-                        <span style={{ color: '#2a3548', fontSize: 12 }}>—</span>
+                        <span style={{ color: textMuted, fontSize: 12 }}>—</span>
                       )}
                     </td>
 
@@ -564,23 +578,23 @@ export default function AllocationPage() {
                         style={{
                           fontSize: 11, fontWeight: 500,
                           padding: '6px 10px',
-                          background: '#080d1a',
-                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: selectBg,
+                          border: '1px solid ' + borderColor,
                           borderRadius: 8,
-                          color: '#5e6d85',
+                          color: textMuted,
                           outline: 'none',
                           cursor: 'pointer',
                           minWidth: 130,
                         }}
-                        onFocus={e => e.target.style.borderColor = 'rgba(201,168,76,0.4)'}
-                        onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                        onFocus={e => e.target.style.borderColor = accentColor}
+                        onBlur={e => e.target.style.borderColor = borderColor}
                       >
-                        <option value="" style={{ background: '#080d1a' }}>Manual Override</option>
+                        <option value="" style={{ background: selectOptionBg }}>Manual Override</option>
                         {courses.map(c => (
                           <option
                             key={c.id}
                             value={c.courseId || c.id}
-                            style={{ background: '#080d1a' }}
+                            style={{ background: selectOptionBg }}
                           >
                             {c.courseName}
                           </option>
@@ -597,10 +611,10 @@ export default function AllocationPage() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
             padding: '12px 20px',
-            borderTop: '1px solid rgba(255,255,255,0.04)',
-            background: 'rgba(255,255,255,0.01)',
+            borderTop: '1px solid ' + borderColor,
+            background: isDark ? 'rgba(255,255,255,0.01)' : theme.colors.secondaryBg,
           }}>
-            <span style={{ fontSize: 10, color: '#2a3548', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: 10, color: textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               CGPA:
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#1d9e75' }}>
@@ -618,7 +632,7 @@ export default function AllocationPage() {
             <span style={{
               marginLeft: 'auto',
               display: 'flex', alignItems: 'center', gap: 5,
-              fontSize: 11, color: '#2a3548',
+              fontSize: 11, color: textMuted,
             }}>
               <HiInformationCircle style={{ width: 13, height: 13 }} />
               Pref rank #1 = first choice allocated
@@ -632,22 +646,22 @@ export default function AllocationPage() {
         <div style={{ ...cardStyle, padding: '60px 24px', textAlign: 'center' }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18,
-            background: 'rgba(201,168,76,0.08)',
-            border: '1px solid rgba(201,168,76,0.15)',
+            background: isDark ? 'rgba(201,168,76,0.08)' : 'rgba(255,130,92,0.08)',
+            border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.2)'),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 20px',
           }}>
-            <HiCpuChip style={{ width: 32, height: 32, color: '#c9a84c' }} />
+            <HiCpuChip style={{ width: 32, height: 32, color: accentColor }} />
           </div>
           <div style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 20, fontWeight: 700, color: '#e8e2d0', marginBottom: 10,
+            fontSize: 20, fontWeight: 700, color: textMain, marginBottom: 10,
           }}>
             No Allocation Run Yet
           </div>
-          <div style={{ width: 40, height: 2, background: '#c9a84c', margin: '0 auto 14px' }} />
-          <p style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.7, maxWidth: 400, margin: '0 auto' }}>
-            Click <strong style={{ color: '#8a94a8' }}>Run Allocation</strong> above to execute the
+          <div style={{ width: 40, height: 2, background: accentColor, margin: '0 auto 14px' }} />
+          <p style={{ fontSize: 13, color: textMuted, lineHeight: 1.7, maxWidth: 400, margin: '0 auto' }}>
+            Click <strong style={{ color: isDark ? '#8a94a8' : theme.colors.primary }}>Run Allocation</strong> above to execute the
             Gale-Shapley stable matching algorithm across all students and their preferences.
           </p>
         </div>

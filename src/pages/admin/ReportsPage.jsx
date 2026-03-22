@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { useTheme } from 'styled-components';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, CartesianGrid, Legend,
@@ -15,43 +16,52 @@ import toast from 'react-hot-toast';
 
 const COLORS = ['#c9a84c', '#1d9e75', '#378add', '#e24b4a', '#7f77dd', '#ba7517', '#d4537e', '#639922'];
 
-const cardStyle = {
-  background: '#0d1425',
-  border: '1px solid rgba(255,255,255,0.06)',
-  borderRadius: 14,
-  overflow: 'hidden',
-};
-
-const chartHeaderStyle = {
-  display: 'flex', alignItems: 'center', gap: 8,
-  padding: '16px 20px',
-  borderBottom: '1px solid rgba(255,255,255,0.04)',
-};
-
-const chartTitleStyle = {
-  fontFamily: "'Playfair Display', Georgia, serif",
-  fontSize: 15, fontWeight: 700, color: '#e8e2d0',
-};
-
-// ✅ FIXED: brighter text, visible border, lighter cursor
-const tooltipStyle = {
-  contentStyle: {
-    background: '#111e36',
-    border: '1px solid rgba(201,168,76,0.35)',
-    borderRadius: 8,
-    color: '#f0ece0',
-    fontSize: 12,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-  },
-  labelStyle: { color: '#c9a84c', fontWeight: 600, marginBottom: 4 },
-  itemStyle: { color: '#e8e2d0' },
-  cursor: { fill: 'rgba(255,255,255,0.05)' },
-};
-
-// ✅ FIXED: brighter axis labels
-const axisStyle = { fontSize: 11, fill: '#6e7e98' };
-
 export default function ReportsPage() {
+  const theme = useTheme();
+  const isDark = theme.mode === 'dark';
+
+  const accentColor = theme.colors.accent;
+  const textMain = isDark ? '#e8e2d0' : theme.colors.primary;
+  const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
+  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
+  const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
+  const mainBg = isDark ? '#080d1a' : theme.colors.background;
+
+  const cardStyle = {
+    background: cardBg,
+    border: '1px solid ' + borderColor,
+    borderRadius: 14,
+    overflow: 'hidden',
+  };
+
+  const chartHeaderStyle = {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '16px 20px',
+    borderBottom: '1px solid ' + borderColor,
+  };
+
+  const chartTitleStyle = {
+    fontFamily: "'Playfair Display', Georgia, serif",
+    fontSize: 15, fontWeight: 700, color: textMain,
+  };
+
+  const tooltipStyle = {
+    contentStyle: {
+      background: isDark ? '#111e36' : theme.colors.cardBg,
+      border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.35)' : 'rgba(255,130,92,0.35)'),
+      borderRadius: 8,
+      color: isDark ? '#f0ece0' : theme.colors.primary,
+      fontSize: 12,
+      boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+    },
+    labelStyle: { color: accentColor, fontWeight: 600, marginBottom: 4 },
+    itemStyle: { color: isDark ? '#e8e2d0' : theme.colors.primary },
+    cursor: { fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' },
+  };
+
+  const axisStyle = { fontSize: 11, fill: isDark ? '#6e7e98' : theme.colors.textLight };
+  const gridStroke = isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border;
+
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
   const [allocations, setAllocations] = useState([]);
@@ -134,7 +144,7 @@ export default function ReportsPage() {
     const toastId = toast.loading('Generating PDF…');
     try {
       const canvas = await html2canvas(reportRef.current, {
-        backgroundColor: '#080d1a',
+        backgroundColor: isDark ? '#080d1a' : '#F8F9FF',
         scale: 2,
         useCORS: true,
         logging: false,
@@ -185,8 +195,8 @@ export default function ReportsPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 36, height: 36,
-          border: '3px solid rgba(201,168,76,0.15)',
-          borderTopColor: '#c9a84c',
+          border: '3px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)'),
+          borderTopColor: accentColor,
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -208,13 +218,13 @@ export default function ReportsPage() {
         <div>
           <h2 style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: 22, fontWeight: 700, color: '#f0ece0', margin: '0 0 4px',
+            fontSize: 22, fontWeight: 700, color: textMain, margin: '0 0 4px',
           }}>
             Reports & Analytics
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 32, height: 2, background: '#c9a84c' }} />
-            <p style={{ fontSize: 13, color: '#3a4a60', margin: 0 }}>
+            <div style={{ width: 32, height: 2, background: accentColor }} />
+            <p style={{ fontSize: 13, color: textMuted, margin: 0 }}>
               Comprehensive system analytics
             </p>
           </div>
@@ -225,7 +235,7 @@ export default function ReportsPage() {
           style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '10px 18px',
-            background: exporting ? 'rgba(201,168,76,0.45)' : '#c9a84c',
+            background: exporting ? (isDark ? 'rgba(201,168,76,0.45)' : 'rgba(255,130,92,0.45)') : accentColor,
             color: '#080d1a',
             fontSize: 13, fontWeight: 700,
             border: 'none', borderRadius: 10,
@@ -244,39 +254,40 @@ export default function ReportsPage() {
       {/* ── Summary Strip ── */}
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 1, background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        gap: 1,
+        background: isDark ? 'rgba(255,255,255,0.05)' : borderColor,
+        border: '1px solid ' + borderColor,
         borderRadius: 14, overflow: 'hidden',
       }}>
-        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#c9a84c', lineHeight: 1 }}>
+        <div style={{ background: cardBg, padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: accentColor, lineHeight: 1 }}>
             {students.length}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+          <div style={{ fontSize: 10, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
             Students
           </div>
         </div>
-        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#c9a84c', lineHeight: 1 }}>
+        <div style={{ background: cardBg, padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: accentColor, lineHeight: 1 }}>
             {courses.length}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+          <div style={{ fontSize: 10, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
             Courses
           </div>
         </div>
-        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
+        <div style={{ background: cardBg, padding: '18px 20px', textAlign: 'center' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#1d9e75', lineHeight: 1 }}>
             {allocatedCount}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+          <div style={{ fontSize: 10, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
             Allocated
           </div>
         </div>
-        <div style={{ background: '#0d1425', padding: '18px 20px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: unallocatedStudents.length > 0 ? '#e24b4a' : '#3a4a60', lineHeight: 1 }}>
+        <div style={{ background: cardBg, padding: '18px 20px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: unallocatedStudents.length > 0 ? '#e24b4a' : textMuted, lineHeight: 1 }}>
             {unallocatedStudents.length}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4a60', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
+          <div style={{ fontSize: 10, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, marginTop: 5 }}>
             Unallocated
           </div>
         </div>
@@ -288,26 +299,24 @@ export default function ReportsPage() {
         {/* ── Course Enrollment ── */}
         <div style={cardStyle}>
           <div style={chartHeaderStyle}>
-            <HiChartBar style={{ width: 15, height: 15, color: '#c9a84c' }} />
+            <HiChartBar style={{ width: 15, height: 15, color: accentColor }} />
             <span style={chartTitleStyle}>Course Enrollment</span>
           </div>
           <div style={{ padding: '16px 8px 16px 0' }}>
             {enrollmentData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={enrollmentData} margin={{ left: -10, right: 10 }}>
-                  {/* ✅ FIXED: more visible grid lines */}
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: '#8a94a8', paddingTop: 8 }} />
-                  {/* ✅ FIXED: capacity bar is now a visible light blue ghost */}
-                  <Bar dataKey="capacity" fill="rgba(110,126,152,0.35)" radius={[4, 4, 0, 0]} name="Capacity" />
-                  <Bar dataKey="enrolled" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Enrolled" />
+                  <Legend wrapperStyle={{ fontSize: 12, color: isDark ? '#8a94a8' : theme.colors.textLight, paddingTop: 8 }} />
+                  <Bar dataKey="capacity" fill={isDark ? 'rgba(110,126,152,0.35)' : 'rgba(24,33,109,0.1)'} radius={[4, 4, 0, 0]} name="Capacity" />
+                  <Bar dataKey="enrolled" fill={accentColor} radius={[4, 4, 0, 0]} name="Enrolled" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+              <div style={{ textAlign: 'center', padding: '48px 0', color: textMuted, fontSize: 13 }}>No data</div>
             )}
           </div>
         </div>
@@ -322,13 +331,12 @@ export default function ReportsPage() {
             {utilizationData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={utilizationData} layout="vertical" margin={{ left: 0, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                   <XAxis
                     type="number" domain={[0, 100]}
                     tick={axisStyle}
-                    axisLine={{ stroke: 'rgba(255,255,255,0.08)' }}
+                    axisLine={{ stroke: gridStroke }}
                     tickLine={false}
-                    // ✅ FIXED: add % unit to tick labels
                     tickFormatter={v => `${v}%`}
                   />
                   <YAxis
@@ -340,7 +348,6 @@ export default function ReportsPage() {
                     {...tooltipStyle}
                     formatter={v => [`${v}%`, 'Utilization']}
                   />
-                  {/* ✅ FIXED: brighter green + visible label inside bar */}
                   <Bar
                     dataKey="utilization"
                     fill="#1d9e75"
@@ -349,14 +356,14 @@ export default function ReportsPage() {
                     label={{
                       position: 'right',
                       formatter: v => v > 0 ? `${v}%` : '',
-                      fill: '#6e7e98',
+                      fill: isDark ? '#6e7e98' : theme.colors.textLight,
                       fontSize: 10,
                     }}
                   />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+              <div style={{ textAlign: 'center', padding: '48px 0', color: textMuted, fontSize: 13 }}>No data</div>
             )}
           </div>
         </div>
@@ -371,18 +378,17 @@ export default function ReportsPage() {
             {popularityData.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={popularityData} margin={{ left: -10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                  <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: gridStroke }} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: '#8a94a8', paddingTop: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: isDark ? '#8a94a8' : theme.colors.textLight, paddingTop: 8 }} />
                   <Bar dataKey="votes" fill="#7f77dd" radius={[4, 4, 0, 0]} name="Preferences" />
-                  {/* ✅ FIXED: slightly more opaque gold for weighted score */}
-                  <Bar dataKey="score" fill="#c9a84c" radius={[4, 4, 0, 0]} name="Weighted Score" />
+                  <Bar dataKey="score" fill={accentColor} radius={[4, 4, 0, 0]} name="Weighted Score" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No preferences data</div>
+              <div style={{ textAlign: 'center', padding: '48px 0', color: textMuted, fontSize: 13 }}>No preferences data</div>
             )}
           </div>
         </div>
@@ -405,9 +411,8 @@ export default function ReportsPage() {
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
-                      // ✅ FIXED: visible percentage labels outside slices
                       label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
-                      labelLine={{ stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }}
+                      labelLine={{ stroke: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', strokeWidth: 1 }}
                     >
                       {deptData.map((entry, i) => (
                         <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
@@ -417,7 +422,6 @@ export default function ReportsPage() {
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* ✅ FIXED: brighter legend text */}
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', gap: '6px 16px',
                   padding: '4px 20px 0',
@@ -428,7 +432,7 @@ export default function ReportsPage() {
                         width: 8, height: 8, borderRadius: 3, flexShrink: 0,
                         background: COLORS[i % COLORS.length],
                       }} />
-                      <span style={{ fontSize: 11, color: '#8a94a8' }}>
+                      <span style={{ fontSize: 11, color: isDark ? '#8a94a8' : textMuted }}>
                         {d.name}
                         <span style={{ color: COLORS[i % COLORS.length], fontWeight: 700, marginLeft: 4 }}>
                           {d.value}
@@ -439,7 +443,7 @@ export default function ReportsPage() {
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#2a3548', fontSize: 13 }}>No data</div>
+              <div style={{ textAlign: 'center', padding: '48px 0', color: textMuted, fontSize: 13 }}>No data</div>
             )}
           </div>
         </div>
@@ -449,7 +453,7 @@ export default function ReportsPage() {
       {/* ── Unallocated Students ── */}
       {unallocatedStudents.length > 0 && (
         <div style={{
-          background: '#0d1425',
+          background: cardBg,
           border: '1px solid rgba(226,75,74,0.2)',
           borderRadius: 14, overflow: 'hidden',
         }}>
@@ -498,10 +502,10 @@ export default function ReportsPage() {
                   {s.studentName?.charAt(0)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#e8e2d0' }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: textMain }}>
                     {s.studentName}
                   </div>
-                  <div style={{ fontSize: 11, color: '#3a4a60', marginTop: 1 }}>
+                  <div style={{ fontSize: 11, color: textMuted, marginTop: 1 }}>
                     {s.registrationNumber} · {s.department}
                   </div>
                 </div>

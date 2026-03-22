@@ -2,38 +2,55 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useTheme } from 'styled-components';
 import {
   HiCog6Tooth, HiClock, HiCheckCircle,
   HiCalendarDays, HiExclamationTriangle, HiTrash,
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 
-const pageStyle = {
-  fontFamily: "'DM Sans', sans-serif",
-  maxWidth: 600,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 16,
-};
-
-const cardStyle = {
-  background: '#0d1425',
-  border: '1px solid rgba(255,255,255,0.06)',
-  borderRadius: 14,
-  overflow: 'hidden',
-};
-
-const labelStyle = {
-  display: 'block',
-  fontSize: 11,
-  fontWeight: 600,
-  color: '#3a4a60',
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  marginBottom: 8,
-};
-
 export default function SettingsPage() {
+  const theme = useTheme();
+  const isDark = theme.mode === 'dark';
+
+  const accentColor = theme.colors.accent;
+  const textMain = isDark ? '#e8e2d0' : theme.colors.primary;
+  const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
+  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
+  const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
+  const inputBg = isDark ? 'rgba(255,255,255,0.04)' : theme.colors.secondaryBg;
+  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : theme.colors.border;
+
+  const cardStyle = {
+    background: cardBg,
+    border: '1px solid ' + borderColor,
+    borderRadius: 14,
+    overflow: 'hidden',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 11, fontWeight: 600,
+    color: textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    marginBottom: 8,
+  };
+
+  const stepCircleStyle = {
+    width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+    background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+    border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 11, fontWeight: 700, color: accentColor,
+  };
+
+  const connectorStyle = {
+    width: 1, height: 12,
+    background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+    marginLeft: 11,
+  };
+
   const [deadline, setDeadline] = useState('');
   const [savedDeadline, setSavedDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,9 +72,7 @@ export default function SettingsPage() {
             setSavedDeadline(d);
           }
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { console.error(e); }
       setLoading(false);
     }
     fetchSettings();
@@ -109,8 +124,8 @@ export default function SettingsPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 36, height: 36,
-          border: '3px solid rgba(201,168,76,0.15)',
-          borderTopColor: '#c9a84c',
+          border: '3px solid ' + (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)'),
+          borderTopColor: accentColor,
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -119,9 +134,30 @@ export default function SettingsPage() {
     );
   }
 
+  const steps = [
+    {
+      text: (
+        <>
+          Set a deadline here — it's stored in Firestore under{' '}
+          <code style={{
+            fontSize: 11, padding: '1px 6px',
+            background: isDark ? 'rgba(255,255,255,0.06)' : theme.colors.secondaryBg,
+            border: '1px solid ' + borderColor,
+            borderRadius: 5, color: isDark ? '#8a94a8' : textMuted,
+            fontFamily: 'monospace',
+          }}>
+            settings/general
+          </code>
+        </>
+      ),
+    },
+    { text: 'Students see a live countdown on their dashboard and preference page' },
+    { text: 'After the deadline passes, the preference submission form is disabled automatically' },
+  ];
+
   return (
     <motion.div
-      style={pageStyle}
+      style={{ fontFamily: "'DM Sans', sans-serif", maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 16 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -129,25 +165,22 @@ export default function SettingsPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator {
           filter: invert(0.3) sepia(1) saturate(3) hue-rotate(5deg);
-          cursor: pointer;
-          opacity: 0.6;
+          cursor: pointer; opacity: 0.6;
         }
-        input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-          opacity: 1;
-        }
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
       `}</style>
 
       {/* ── Page Header ── */}
       <div>
         <h2 style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 22, fontWeight: 700, color: '#f0ece0', margin: '0 0 4px',
+          fontSize: 22, fontWeight: 700, color: textMain, margin: '0 0 4px',
         }}>
           Settings
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 2, background: '#c9a84c' }} />
-          <p style={{ fontSize: 13, color: '#3a4a60', margin: 0 }}>
+          <div style={{ width: 32, height: 2, background: accentColor }} />
+          <p style={{ fontSize: 13, color: textMuted, margin: 0 }}>
             Manage system configuration and preferences
           </p>
         </div>
@@ -162,9 +195,7 @@ export default function SettingsPage() {
             display: 'flex', alignItems: 'flex-start', gap: 12,
             padding: '14px 18px',
             background: isPast ? 'rgba(226,75,74,0.06)' : 'rgba(29,158,117,0.06)',
-            border: isPast
-              ? '1px solid rgba(226,75,74,0.2)'
-              : '1px solid rgba(29,158,117,0.2)',
+            border: isPast ? '1px solid rgba(226,75,74,0.2)' : '1px solid rgba(29,158,117,0.2)',
             borderRadius: 12,
           }}
         >
@@ -180,14 +211,10 @@ export default function SettingsPage() {
             }
           </div>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{
-              fontSize: 13, fontWeight: 600,
-              color: isPast ? '#e24b4a' : '#1d9e75',
-              marginBottom: 3,
-            }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: isPast ? '#e24b4a' : '#1d9e75', marginBottom: 3 }}>
               {isPast ? 'Deadline has passed' : 'Active deadline set'}
             </div>
-            <div style={{ fontSize: 12, color: '#3a4a60' }}>
+            <div style={{ fontSize: 12, color: textMuted }}>
               {savedDeadline.toLocaleDateString('en-IN', {
                 weekday: 'long', year: 'numeric', month: 'long',
                 day: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -203,25 +230,25 @@ export default function SettingsPage() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '18px 22px',
-          background: 'rgba(201,168,76,0.05)',
-          borderBottom: '1px solid rgba(201,168,76,0.08)',
+          background: isDark ? 'rgba(201,168,76,0.05)' : 'rgba(255,130,92,0.04)',
+          borderBottom: '1px solid ' + (isDark ? 'rgba(201,168,76,0.08)' : 'rgba(255,130,92,0.15)'),
         }}>
           <div style={{
             width: 40, height: 40, borderRadius: 11, flexShrink: 0,
-            background: 'rgba(201,168,76,0.1)',
-            border: '1px solid rgba(201,168,76,0.2)',
+            background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
+            border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <HiCalendarDays style={{ width: 19, height: 19, color: '#c9a84c' }} />
+            <HiCalendarDays style={{ width: 19, height: 19, color: accentColor }} />
           </div>
           <div>
             <div style={{
               fontFamily: "'Playfair Display', Georgia, serif",
-              fontSize: 15, fontWeight: 700, color: '#e8e2d0',
+              fontSize: 15, fontWeight: 700, color: textMain,
             }}>
               Course Preference Deadline
             </div>
-            <div style={{ fontSize: 12, color: '#3a4a60', marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: textMuted, marginTop: 2 }}>
               Set the cut-off date for students to submit their preferences
             </div>
           </div>
@@ -240,30 +267,25 @@ export default function SettingsPage() {
               style={{
                 width: '100%',
                 padding: '11px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: inputFocused
-                  ? '1px solid rgba(201,168,76,0.45)'
-                  : '1px solid rgba(255,255,255,0.08)',
+                background: inputBg,
+                border: inputFocused ? '1px solid ' + accentColor : '1px solid ' + inputBorder,
                 borderRadius: 9,
-                color: '#e8e2d0',
+                color: textMain,
                 fontSize: 14,
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 boxSizing: 'border-box',
-                colorScheme: 'dark',
+                colorScheme: isDark ? 'dark' : 'light',
               }}
             />
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              marginTop: 8, fontSize: 12, color: '#2a3548',
-            }}>
-              <HiClock style={{ width: 12, height: 12, color: '#3a4a60' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, color: textMuted }}>
+              <HiClock style={{ width: 12, height: 12, color: textMuted }} />
               Students will see a live countdown on their dashboard and preference page
             </div>
           </div>
 
-          {/* Gold divider */}
-          <div style={{ height: 1, background: 'rgba(201,168,76,0.08)', marginBottom: 18 }} />
+          {/* Divider */}
+          <div style={{ height: 1, background: isDark ? 'rgba(201,168,76,0.08)' : theme.colors.border, marginBottom: 18 }} />
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: 10 }}>
@@ -274,21 +296,20 @@ export default function SettingsPage() {
                 flex: 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                 padding: '12px',
-                background: saving ? 'rgba(201,168,76,0.15)' : '#c9a84c',
-                color: saving ? '#3a4a60' : '#080d1a',
+                background: saving ? (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)') : accentColor,
+                color: saving ? textMuted : '#080d1a',
                 fontSize: 13, fontWeight: 700,
                 border: 'none', borderRadius: 10,
                 cursor: saving ? 'not-allowed' : 'pointer',
-                letterSpacing: '0.02em',
-                transition: 'all 0.2s',
+                letterSpacing: '0.02em', transition: 'all 0.2s',
               }}
             >
               {saving ? (
                 <>
                   <span style={{
                     width: 14, height: 14,
-                    border: '2px solid #3a4a60',
-                    borderTopColor: '#c9a84c',
+                    border: '2px solid ' + textMuted,
+                    borderTopColor: accentColor,
                     borderRadius: '50%',
                     display: 'inline-block',
                     animation: 'spin 0.7s linear infinite',
@@ -334,82 +355,26 @@ export default function SettingsPage() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '16px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid ' + borderColor,
         }}>
-          <HiCog6Tooth style={{ width: 15, height: 15, color: '#c9a84c' }} />
-          <span style={{
-            fontSize: 11, fontWeight: 600, color: '#3a4a60',
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-          }}>
+          <HiCog6Tooth style={{ width: 15, height: 15, color: accentColor }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             How It Works
           </span>
         </div>
 
         <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* Step 1 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(201,168,76,0.1)',
-              border: '1px solid rgba(201,168,76,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700, color: '#c9a84c',
-            }}>
-              1
-            </div>
-            <div style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.65, marginTop: 2 }}>
-              Set a deadline here — it's stored in Firestore under{' '}
-              <code style={{
-                fontSize: 11, padding: '1px 6px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 5, color: '#8a94a8',
-                fontFamily: 'monospace',
-              }}>
-                settings/general
-              </code>
-            </div>
-          </div>
-
-          {/* Connector */}
-          <div style={{ width: 1, height: 12, background: 'rgba(201,168,76,0.1)', marginLeft: 11 }} />
-
-          {/* Step 2 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(201,168,76,0.1)',
-              border: '1px solid rgba(201,168,76,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700, color: '#c9a84c',
-            }}>
-              2
-            </div>
-            <div style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.65, marginTop: 2 }}>
-              Students see a live countdown on their dashboard and preference page
-            </div>
-          </div>
-
-          {/* Connector */}
-          <div style={{ width: 1, height: 12, background: 'rgba(201,168,76,0.1)', marginLeft: 11 }} />
-
-          {/* Step 3 */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(201,168,76,0.1)',
-              border: '1px solid rgba(201,168,76,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700, color: '#c9a84c',
-            }}>
-              3
-            </div>
-            <div style={{ fontSize: 13, color: '#3a4a60', lineHeight: 1.65, marginTop: 2 }}>
-              After the deadline passes, the preference submission form is disabled automatically
-            </div>
-          </div>
-
+          {steps.map((step, i) => (
+            <>
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={stepCircleStyle}>{i + 1}</div>
+                <div style={{ fontSize: 13, color: textMuted, lineHeight: 1.65, marginTop: 2 }}>
+                  {step.text}
+                </div>
+              </div>
+              {i < steps.length - 1 && <div style={connectorStyle} />}
+            </>
+          ))}
         </div>
       </div>
 
