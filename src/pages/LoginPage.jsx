@@ -8,6 +8,8 @@ import {
   HiEye, HiEyeSlash, HiUser, HiShieldCheck,
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const theme = useTheme();
@@ -41,7 +43,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState('student');
   const [focusedField, setFocusedField] = useState('');
 
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const isAdmin = mode === 'admin';
 
@@ -60,7 +62,24 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
+      const cred = await login(email, password);
+      // Verify the user's role matches the selected portal
+      const userSnap = await getDoc(doc(db, 'users', cred.user.uid));
+      const userRole = userSnap.exists() ? userSnap.data().role : 'student';
+
+      if (mode === 'admin' && userRole !== 'admin') {
+        await logout();
+        toast.error('Access denied. These are not admin credentials. Please use the Student portal.');
+        setLoading(false);
+        return;
+      }
+      if (mode === 'student' && userRole !== 'student') {
+        await logout();
+        toast.error('Access denied. These are not student credentials. Please use the Admin portal.');
+        setLoading(false);
+        return;
+      }
+
       toast.success('Logged in successfully!');
       navigate('/');
     } catch (err) {
@@ -70,7 +89,7 @@ export default function LoginPage() {
         'auth/invalid-email': 'Invalid email address',
         'auth/invalid-credential': 'Invalid email or password',
       };
-      toast.error(messages[err.code] || 'Login failed. Please try again.');
+      toast.error(messages[err.code] || err.message || 'Login failed. Please try again.');
     }
     setLoading(false);
   }
