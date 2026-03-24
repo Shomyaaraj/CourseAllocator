@@ -115,9 +115,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      setLoading(false);
 
       if (user) {
+        // Keep loading=true until we have the role from Firestore
         getDoc(doc(db, 'users', user.uid))
           .then(docSnap => {
             if (docSnap.exists()) {
@@ -127,11 +127,15 @@ export function AuthProvider({ children }) {
             }
           })
           .catch(err => {
-            console.error('Error fetching user profile from Firestore in background:', err);
+            console.error('Error fetching user profile:', err);
             setUserProfile(prev => prev || { uid: user.uid, email: user.email, role: 'student' });
+          })
+          .finally(() => {
+            setLoading(false); // Only done after role is known
           });
       } else {
         setUserProfile(null);
+        setLoading(false);
       }
     });
     return unsubscribe;

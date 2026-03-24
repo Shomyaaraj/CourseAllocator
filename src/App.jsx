@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -30,11 +31,7 @@ function AuthRedirect() {
   const { currentUser, userProfile, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 border-4 border-navy-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingSpinner fullPage size="md" text="Loading..." />;
   }
 
   if (!currentUser) return <LandingPage />;

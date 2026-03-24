@@ -11,6 +11,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <script>
+      (function () {
+        var theme = localStorage.getItem('vuca-theme');
+        if (theme === 'dark') {
+          document.documentElement.style.background = '#080d1a';
+          document.body && (document.body.style.background = '#080d1a');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

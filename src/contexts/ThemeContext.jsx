@@ -7,9 +7,16 @@ const ThemeToggleContext = createContext();
 export const useThemeToggle = () => useContext(ThemeToggleContext);
 
 export const ThemeContextProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem('vuca-theme') === 'dark'
+  );
 
-  const toggleTheme = () => setIsDark((prev) => !prev);
+  const toggleTheme = () =>
+    setIsDark((prev) => {
+      const next = !prev;
+      localStorage.setItem('vuca-theme', next ? 'dark' : 'light');
+      return next;
+    });
 
   return (
     <ThemeToggleContext.Provider value={{ isDark, toggleTheme }}>
