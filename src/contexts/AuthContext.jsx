@@ -6,7 +6,7 @@ import {
   signOut,
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, updateDoc, increment, collection, query, where } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -20,6 +20,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   async function signup(email, password, profileData) {
+    // Check if registration number is already taken
+    if (profileData.registrationNumber) {
+      const regSnap = await getDocs(
+        query(collection(db, 'users'), where('registrationNumber', '==', profileData.registrationNumber))
+      );
+      if (!regSnap.empty) {
+        throw { code: 'registration/duplicate-number', message: 'This registration number is already in use.' };
+      }
+    }
+
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const userDoc = {
       uid: cred.user.uid,
@@ -55,6 +65,16 @@ export function AuthProvider({ children }) {
     }
     if (usesLeft !== undefined && usesLeft <= 0) {
       throw { code: 'admin/code-exhausted', message: 'Invite code has been fully used.' };
+    }
+
+    // Check if employee ID is already taken
+    if (profileData.employeeId) {
+      const empSnap = await getDocs(
+        query(collection(db, 'users'), where('employeeId', '==', profileData.employeeId))
+      );
+      if (!empSnap.empty) {
+        throw { code: 'registration/duplicate-employee-id', message: 'This Employee ID is already registered.' };
+      }
     }
 
     const cred = await createUserWithEmailAndPassword(auth, email, password);

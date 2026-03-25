@@ -86,8 +86,9 @@ export default function RegisterPage() {
         'auth/email-already-in-use': 'An account with this email already exists',
         'auth/invalid-email': 'Invalid email address',
         'auth/weak-password': 'Password is too weak',
+        'registration/duplicate-number': 'This registration number is already in use. Please check and try again.',
       };
-      toast.error(messages[err.code] || 'Registration failed. Please try again.');
+      toast.error(messages[err.code] || err.message || 'Registration failed. Please try again.');
     }
     setLoading(false);
   }

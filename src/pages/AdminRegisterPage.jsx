@@ -155,6 +155,7 @@ export default function AdminRegisterPage() {
         'auth/email-already-in-use': 'An account with this email already exists.',
         'auth/invalid-email': 'Invalid email address.',
         'auth/weak-password': 'Password is too weak.',
+        'registration/duplicate-employee-id': 'This Employee ID is already registered. Please use a different ID.',
       };
       toast.error(messages[err.code] || err.message || 'Registration failed.');
     }
