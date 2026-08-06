@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useTheme } from 'styled-components';
 import {
@@ -39,26 +39,35 @@ export default function ResultsPage() {
   const [courseDetails, setCourseDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchAllocation() {
       try {
-        const q = query(collection(db, 'allocations'), where('studentId', '==', currentUser.uid));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const allocData = { id: snap.docs[0].id, ...snap.docs[0].data() };
-          setAllocation(allocData);
-          if (allocData.allocatedCourse) {
-            const coursesSnap = await getDocs(collection(db, 'courses'));
-            const course = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
-              .find(c => (c.courseId || c.id) === allocData.allocatedCourse);
+        // Demo mode: skip Firestore, rely on userProfile.allocatedCourse
+        if (isDemoFirebase) {
+          if (userProfile?.allocatedCourse) {
+            const localCourses = (await import('../../utils/mockDatabase')).getLocalCourses();
+            const course = localCourses.find(c => (c.courseId || c.id) === userProfile.allocatedCourse);
             if (course) setCourseDetails(course);
+          }
+        } else {
+          const q = query(collection(db, 'allocations'), where('studentId', '==', currentUser.uid));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const allocData = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            setAllocation(allocData);
+            if (allocData.allocatedCourse) {
+              const coursesSnap = await getDocs(collection(db, 'courses'));
+              const course = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .find(c => (c.courseId || c.id) === allocData.allocatedCourse);
+              if (course) setCourseDetails(course);
+            }
           }
         }
       } catch (e) { console.error(e); }
       setLoading(false);
     }
     fetchAllocation();
-  }, [currentUser]);
+  }, [currentUser, userProfile]);
 
   if (loading) {
     return (

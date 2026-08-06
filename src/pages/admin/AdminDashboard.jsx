@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getLocalUsers, getLocalCourses, getLocalSettings } from '../../utils/mockDatabase';
 import { useTheme } from 'styled-components';
 import {
   HiAcademicCap, HiHome, HiBookOpen, HiUserGroup, HiCog6Tooth,
@@ -35,6 +36,7 @@ export default function AdminDashboard() {
   const theme = useTheme();
   const isDark = theme.mode === 'dark';
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const accentColor = theme.colors.accent;
   const textMain = isDark ? '#e8e2d0' : theme.colors.primary;
@@ -63,6 +65,17 @@ export default function AdminDashboard() {
   const activeLabel = SIDEBAR_LINKS.find(l => location.pathname === l.path)?.label || 'Dashboard';
   const initials = userProfile?.name?.charAt(0) || 'A';
 
+  function toggleSidebar() {
+    if (window.innerWidth <= 1024) {
+      setCollapsed(false);
+      setSidebarOpen(prev => !prev);
+    } else {
+      setSidebarOpen(false);
+      setCollapsed(prev => !prev);
+    }
+  }
+
+
   return (
     <div style={{ minHeight: '100vh', background: mainBg, fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
@@ -81,9 +94,12 @@ export default function AdminDashboard() {
       <aside
         className={'admin-sidebar ' + (sidebarOpen ? 'open' : '')}
         style={{
-          position: 'fixed', inset: '0 auto 0 0', zIndex: 40, width: 240,
+          position: 'fixed', inset: '0 auto 0 0', zIndex: 40,
+          width: collapsed ? 0 : 240,
           background: sidebarBg, borderRight: '1px solid ' + borderColor,
-          display: 'flex', flexDirection: 'column', transition: 'transform 0.3s ease',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          transition: 'width 0.25s ease, transform 0.3s ease',
         }}
       >
         {/* Logo */}
@@ -107,43 +123,18 @@ export default function AdminDashboard() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {SIDEBAR_LINKS.map(({ label, path, icon: Icon }) => (
-            <Link key={path} to={path} onClick={() => setSidebarOpen(false)} style={navLinkStyle(path)}>
-              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
-              {label}
-            </Link>
-          ))}
+          {SIDEBAR_LINKS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.path} to={item.path} onClick={() => setSidebarOpen(false)} style={navLinkStyle(item.path)}>
+                <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Bottom */}
-        <div style={{ padding: '12px 10px', borderTop: '1px solid ' + (isDark ? 'rgba(255,255,255,0.04)' : borderColor) }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', marginBottom: 4 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              background: isDark ? 'rgba(201,168,76,0.1)' : 'rgba(255,130,92,0.1)',
-              border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 700, color: accentColor,
-            }}>
-              {initials}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: textMain, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {userProfile?.name || 'Admin'}
-              </div>
-              <div style={{ fontSize: 10, color: textMuted }}>Administrator</div>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', background: 'none', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#e24b4a' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(226,75,74,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <HiArrowRightOnRectangle style={{ width: 16, height: 16 }} />
-            Sign Out
-          </button>
-        </div>
+
       </aside>
 
       {/* Mobile overlay */}
@@ -152,7 +143,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main */}
-      <div className="admin-main" style={{ marginLeft: 240, minHeight: '100vh' }}>
+      <div className="admin-main" style={{ marginLeft: collapsed ? 0 : 240, minHeight: '100vh', transition: 'margin-left 0.25s ease' }}>
 
         {/* Top bar */}
         <header style={{
@@ -162,7 +153,7 @@ export default function AdminDashboard() {
           padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={() => setSidebarOpen(true)} style={{ padding: 6, background: 'none', border: 'none', color: textMuted, cursor: 'pointer' }}>
+            <button onClick={toggleSidebar} style={{ padding: 6, background: 'none', border: 'none', color: textMuted, cursor: 'pointer' }}>
               <HiBars3 style={{ width: 20, height: 20 }} />
             </button>
             <div>
@@ -220,26 +211,46 @@ function AdminOverview() {
   const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchStats() {
       try {
-        const [studentsSnap, coursesSnap, allocSnap, settingsSnap] = await Promise.all([
-          getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'courses')),
-          getDocs(collection(db, 'allocations')),
-          getDoc(doc(db, 'settings', 'general')),
-        ]);
-        const students = studentsSnap.docs.filter(d => d.data().role === 'student');
-        const courses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setStats({ students: students.length, courses: courses.length, allocated: allocSnap.size, unallocated: Math.max(0, students.length - allocSnap.size) });
-        setCourseData(courses.slice(0, 6).map(c => ({
-          name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : (c.courseName || 'Unknown'),
-          capacity: c.seatCapacity || 0,
-          enrolled: (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
-        })));
-        if (settingsSnap.exists() && settingsSnap.data().preferenceDeadline) {
-          const dl = settingsSnap.data().preferenceDeadline;
-          setDeadline(dl?.seconds ? new Date(dl.seconds * 1000) : new Date(dl));
+        if (isDemoFirebase) {
+          const localStds = getLocalUsers().filter(u => u.role === 'student');
+          const localCrs = getLocalCourses();
+          const mockAllocsData = localStorage.getItem('vuca_mock_allocations');
+          const mockAllocs = mockAllocsData ? JSON.parse(mockAllocsData) : [];
+          const localSet = getLocalSettings();
+          setStats({
+            students: localStds.length,
+            courses: localCrs.length,
+            allocated: mockAllocs.filter(a => a.allocatedCourse).length,
+            unallocated: Math.max(0, localStds.length - mockAllocs.filter(a => a.allocatedCourse).length),
+          });
+          setCourseData(localCrs.slice(0, 6).map(c => ({
+            name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : (c.courseName || 'Unknown'),
+            capacity: c.seatCapacity || 0,
+            enrolled: (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
+          })));
+          if (localSet?.preferenceDeadline) setDeadline(new Date(localSet.preferenceDeadline));
+        } else {
+          const [studentsSnap, coursesSnap, allocSnap, settingsSnap] = await Promise.all([
+            getDocs(collection(db, 'users')),
+            getDocs(collection(db, 'courses')),
+            getDocs(collection(db, 'allocations')),
+            getDoc(doc(db, 'settings', 'general')),
+          ]);
+          const students = studentsSnap.docs.filter(d => d.data().role === 'student');
+          const courses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setStats({ students: students.length, courses: courses.length, allocated: allocSnap.size, unallocated: Math.max(0, students.length - allocSnap.size) });
+          setCourseData(courses.slice(0, 6).map(c => ({
+            name: c.courseName?.length > 12 ? c.courseName.substring(0, 12) + '..' : (c.courseName || 'Unknown'),
+            capacity: c.seatCapacity || 0,
+            enrolled: (c.seatCapacity || 0) - (c.remainingSeats ?? c.seatCapacity ?? 0),
+          })));
+          if (settingsSnap.exists() && settingsSnap.data().preferenceDeadline) {
+            const dl = settingsSnap.data().preferenceDeadline;
+            setDeadline(dl?.seconds ? new Date(dl.seconds * 1000) : new Date(dl));
+          }
         }
       } catch (e) { console.error(e); }
       setLoading(false);
@@ -302,15 +313,18 @@ function AdminOverview() {
           { icon: HiBookOpen, color: '#7f77dd', bg: 'rgba(127,119,221,0.1)', border: 'rgba(127,119,221,0.15)', val: stats.courses, label: 'Total Courses' },
           { icon: HiCheckBadge, color: '#1d9e75', bg: 'rgba(29,158,117,0.1)', border: 'rgba(29,158,117,0.15)', val: stats.allocated, label: 'Allocated' },
           { icon: HiDocumentText, color: '#e24b4a', bg: 'rgba(226,75,74,0.1)', border: 'rgba(226,75,74,0.15)', val: stats.unallocated, label: 'Unallocated' },
-        ].map(({ icon: Icon, color, bg, border, val, label }, i) => (
-          <motion.div key={label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} style={{ ...cardStyle, padding: '20px' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, marginBottom: 14, background: bg, border: '1px solid ' + border, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon style={{ width: 18, height: 18, color }} />
-            </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: textMain, lineHeight: 1 }}>{val}</div>
-            <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-          </motion.div>
-        ))}
+        ].map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <motion.div key={item.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }} style={{ ...cardStyle, padding: '20px' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, marginBottom: 14, background: item.bg, border: '1px solid ' + item.border, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon style={{ width: 18, height: 18, color: item.color }} />
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: textMain, lineHeight: 1 }}>{item.val}</div>
+              <div style={{ fontSize: 11, color: textMuted, fontWeight: 500, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.label}</div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Charts */}
@@ -400,17 +414,20 @@ function AdminOverview() {
             { to: '/admin/preferences', icon: HiUserGroup, color: '#378add', label: 'View Preferences' },
             { to: '/admin/allocation', icon: HiCpuChip, color: accentColor, label: 'Run Allocation' },
             { to: '/admin/settings', icon: HiCog6Tooth, color: '#1d9e75', label: 'Settings' },
-          ].map(({ to, icon: Icon, color, label }) => (
-            <Link
-              key={to} to={to}
-              style={{ background: cardBg, padding: '18px 16px', textDecoration: 'none', textAlign: 'center', transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = cardHoverBg}
-              onMouseLeave={e => e.currentTarget.style.background = cardBg}
-            >
-              <Icon style={{ width: 22, height: 22, color, margin: '0 auto 8px' }} />
-              <div style={{ fontSize: 12, fontWeight: 600, color: textMuted }}>{label}</div>
-            </Link>
-          ))}
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.to} to={item.to}
+                style={{ background: cardBg, padding: '18px 16px', textDecoration: 'none', textAlign: 'center', transition: 'background 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = cardHoverBg}
+                onMouseLeave={e => e.currentTarget.style.background = cardBg}
+              >
+                <Icon style={{ width: 22, height: 22, color: item.color, margin: '0 auto 8px' }} />
+                <div style={{ fontSize: 12, fontWeight: 600, color: textMuted }}>{item.label}</div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

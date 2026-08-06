@@ -144,19 +144,22 @@ export default function Footer() {
               { icon: FiMail, href: 'mailto:admin@vignan.ac.in', label: 'Email' },
               { icon: FiGithub, href: '#', label: 'GitHub' },
               { icon: FiLinkedin, href: '#', label: 'LinkedIn' }
-            ].map(({ icon: Icon, href, label }) => (
-              <a key={label} href={href} title={label} style={{
-                width: 34, height: 34,
-                border: '1px solid ' + theme.colors.border,
-                borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: theme.colors.textLight, textDecoration: 'none', transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = theme.colors.accent; e.currentTarget.style.color = theme.colors.accent; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = theme.colors.border; e.currentTarget.style.color = theme.colors.textLight; }}
-              >
-                <Icon size={14} />
-              </a>
-            ))}
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <a key={item.label} href={item.href} title={item.label} style={{
+                  width: 34, height: 34,
+                  border: '1px solid ' + theme.colors.border,
+                  borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: theme.colors.textLight, textDecoration: 'none', transition: 'all 0.2s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = theme.colors.accent; e.currentTarget.style.color = theme.colors.accent; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = theme.colors.border; e.currentTarget.style.color = theme.colors.textLight; }}
+                >
+                  <Icon size={14} />
+                </a>
+              );
+            })}
           </div>
         </div>
 

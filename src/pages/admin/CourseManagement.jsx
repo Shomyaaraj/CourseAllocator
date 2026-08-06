@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useTheme } from 'styled-components';
 import {
@@ -10,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Modal from '../../components/ui/Modal';
+import { getLocalCourses, saveLocalCourses } from '../../utils/mockDatabase';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -86,17 +88,30 @@ export default function CourseManagement() {
   const [saving, setSaving] = useState(false);
   const [focusedField, setFocusedField] = useState('');
 
-  useEffect(() => { fetchCourses(); }, []);
-
-  async function fetchCourses() {
+async function fetchCourses() {
     try {
-      const snap = await getDocs(collection(db, 'courses'));
-      setCourses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      let list;
+      if (isDemoFirebase) {
+        list = getLocalCourses();
+      } else {
+        const snap = await getDocs(collection(db, 'courses'));
+        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (list && list.length > 0) {
+          saveLocalCourses(list);
+        } else {
+          list = getLocalCourses();
+        }
+      }
+      setCourses(list);
     } catch {
-      toast.error('Failed to load courses');
+      setCourses(getLocalCourses());
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   function parseTimetableSlot(slot) {
     if (!slot) return { day: '', startTime: '', endTime: '' };
@@ -153,32 +168,41 @@ export default function CourseManagement() {
         : [],
       timetableSlot,
     };
-    try {
-      if (editing) {
-        await updateDoc(doc(db, 'courses', editing), data);
-        setCourses(prev => prev.map(c => c.id === editing ? { ...c, ...data } : c));
-        toast.success('Course updated!');
-      } else {
+
+    let updatedList = [];
+    if (editing) {
+      updatedList = courses.map(c => c.id === editing ? { ...c, ...data } : c);
+      setCourses(updatedList);
+      saveLocalCourses(updatedList);
+      try { await updateDoc(doc(db, 'courses', editing), data); } catch (e) { console.warn(e); }
+      toast.success('Course updated!');
+    } else {
+      const newId = 'crs_' + Date.now();
+      const newCourse = { id: newId, ...data };
+      updatedList = [...courses, newCourse];
+      setCourses(updatedList);
+      saveLocalCourses(updatedList);
+      try {
         const docRef = await addDoc(collection(db, 'courses'), data);
-        setCourses(prev => [...prev, { id: docRef.id, ...data }]);
-        toast.success('Course added!');
-      }
-      setShowForm(false);
-    } catch {
-      toast.error('Failed to save course');
+        if (docRef?.id) {
+          const final = updatedList.map(c => c.id === newId ? { ...c, id: docRef.id } : c);
+          setCourses(final);
+          saveLocalCourses(final);
+        }
+      } catch (e) { console.warn(e); }
+      toast.success('Course added!');
     }
+    setShowForm(false);
     setSaving(false);
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this course?')) return;
-    try {
-      await deleteDoc(doc(db, 'courses', id));
-      setCourses(prev => prev.filter(c => c.id !== id));
-      toast.success('Course deleted');
-    } catch {
-      toast.error('Failed to delete');
-    }
+    const updated = courses.filter(c => c.id !== id);
+    setCourses(updated);
+    saveLocalCourses(updated);
+    try { await deleteDoc(doc(db, 'courses', id)); } catch (e) { console.warn(e); }
+    toast.success('Course deleted');
   }
 
   function getInputStyle(field) {

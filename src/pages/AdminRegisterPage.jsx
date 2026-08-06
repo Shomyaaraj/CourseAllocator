@@ -133,7 +133,19 @@ export default function AdminRegisterPage() {
     return true;
   }
 
-  function nextStep() { if (validateStep()) setStep(s => s + 1); }
+function nextStep() {
+    if (!validateStep()) return;
+    // Validate invite code immediately on step 0
+    if (step === 0) {
+      const code = formData.inviteCode.trim();
+      const validCodes = ['VUCA2026', 'ADMIN123'];
+      if (!validCodes.includes(code)) {
+        toast.error('Invalid invite code. Please check and try again.');
+        return;
+      }
+    }
+    setStep(s => s + 1);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -155,11 +167,15 @@ export default function AdminRegisterPage() {
         'auth/email-already-in-use': 'An account with this email already exists.',
         'auth/invalid-email': 'Invalid email address.',
         'auth/weak-password': 'Password is too weak.',
+        'auth/invalid-api-key': 'Authentication service unavailable. Please check Firebase configuration.',
+        'auth/api-key-not-valid': 'Authentication service unavailable. Please check Firebase configuration.',
+        'auth/network-request-failed': 'Network error. Please check your connection and try again.',
         'registration/duplicate-employee-id': 'This Employee ID is already registered. Please use a different ID.',
       };
       toast.error(messages[err.code] || err.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   // Step circle helper
@@ -326,7 +342,7 @@ export default function AdminRegisterPage() {
                       <input type="text" name="inviteCode" value={formData.inviteCode} onChange={handleChange}
                         style={getInputStyle('inviteCode')} onFocus={() => setFocusedField('inviteCode')} onBlur={() => setFocusedField('')} autoFocus />
                     </div>
-                    <p style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>Contact your system administrator to obtain an invite code.</p>
+<p style={{ fontSize: 12, color: textMuted, marginTop: 8 }}>Contact your system administrator to obtain an invite code.</p>
                   </div>
 
                   <button type="button" onClick={nextStep} style={{ width: '100%', padding: '13px', background: accentColor, color: '#080d1a', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 10, cursor: 'pointer', letterSpacing: '0.03em' }}>

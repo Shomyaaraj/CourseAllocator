@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getLocalSettings, saveLocalSettings } from '../../utils/mockDatabase';
 import { useTheme } from 'styled-components';
 import {
   HiCog6Tooth, HiClock, HiCheckCircle,
@@ -58,18 +59,27 @@ export default function SettingsPage() {
   const [clearing, setClearing] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchSettings() {
       try {
-        const snap = await getDoc(doc(db, 'settings', 'general'));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.preferenceDeadline) {
-            const d = data.preferenceDeadline.seconds
-              ? new Date(data.preferenceDeadline.seconds * 1000)
-              : new Date(data.preferenceDeadline);
+        if (isDemoFirebase) {
+          const localSet = getLocalSettings();
+          if (localSet?.preferenceDeadline) {
+            const d = new Date(localSet.preferenceDeadline);
             setDeadline(d.toISOString().slice(0, 16));
             setSavedDeadline(d);
+          }
+        } else {
+          const snap = await getDoc(doc(db, 'settings', 'general'));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.preferenceDeadline) {
+              const d = data.preferenceDeadline.seconds
+                ? new Date(data.preferenceDeadline.seconds * 1000)
+                : new Date(data.preferenceDeadline);
+              setDeadline(d.toISOString().slice(0, 16));
+              setSavedDeadline(d);
+            }
           }
         }
       } catch (e) { console.error(e); }
@@ -85,11 +95,16 @@ export default function SettingsPage() {
     if (selectedDate < new Date()) return toast.error('Deadline must be in the future');
     setSaving(true);
     try {
-      await setDoc(
-        doc(db, 'settings', 'general'),
-        { preferenceDeadline: selectedDate, updatedAt: new Date().toISOString() },
-        { merge: true }
-      );
+      if (isDemoFirebase) {
+        const localSet = getLocalSettings();
+        saveLocalSettings({ ...localSet, preferenceDeadline: selectedDate.toISOString(), updatedAt: new Date().toISOString() });
+      } else {
+        await setDoc(
+          doc(db, 'settings', 'general'),
+          { preferenceDeadline: selectedDate, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      }
       setSavedDeadline(selectedDate);
       toast.success('Deadline saved successfully!');
     } catch (e) {
@@ -103,11 +118,16 @@ export default function SettingsPage() {
     if (!confirm('Remove the current deadline? Students will no longer see a countdown.')) return;
     setClearing(true);
     try {
-      await setDoc(
-        doc(db, 'settings', 'general'),
-        { preferenceDeadline: null, updatedAt: new Date().toISOString() },
-        { merge: true }
-      );
+      if (isDemoFirebase) {
+        const localSet = getLocalSettings();
+        saveLocalSettings({ ...localSet, preferenceDeadline: null, updatedAt: new Date().toISOString() });
+      } else {
+        await setDoc(
+          doc(db, 'settings', 'general'),
+          { preferenceDeadline: null, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      }
       setDeadline('');
       setSavedDeadline(null);
       toast.success('Deadline cleared');
