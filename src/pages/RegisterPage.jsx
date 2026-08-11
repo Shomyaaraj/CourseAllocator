@@ -86,11 +86,15 @@ export default function RegisterPage() {
         'auth/email-already-in-use': 'An account with this email already exists',
         'auth/invalid-email': 'Invalid email address',
         'auth/weak-password': 'Password is too weak',
+        'auth/invalid-api-key': 'Authentication service unavailable. Please check Firebase configuration.',
+        'auth/api-key-not-valid': 'Authentication service unavailable. Please check Firebase configuration.',
+        'auth/network-request-failed': 'Network error. Please check your connection and try again.',
         'registration/duplicate-number': 'This registration number is already in use. Please check and try again.',
       };
       toast.error(messages[err.code] || err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const features = ['Smart Course Allocation', 'CGPA-based Priority', 'Live Countdown Timer', 'Instant Results'];

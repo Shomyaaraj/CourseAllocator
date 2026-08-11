@@ -71,6 +71,15 @@ function shuffle(arr) {
 }
 
 /**
+ * Stable student key.
+ * Firestore documents expose `id`; local mock users expose `uid`.
+ * Normalize so the allocation engine works with both data sources.
+ */
+function studentKey(student) {
+  return student.id || student.uid;
+}
+
+/**
  * Run the Gale-Shapley course allocation.
  *
  * @param {Object[]} students        Firestore student objects
@@ -90,16 +99,17 @@ export function runAllocation(students, courses, skipStudentIds = []) {
   }
 
   /* ── Separate students to process vs skip ── */
-  // Filter out any undefined/null entries or students without an id to prevent crashes
+  // Filter out any undefined/null entries or students without an id to prevent crashes.
+  // Accept both `id` (Firestore) and `uid` (local mock users) as the stable student key.
   const activeStudents = students
-    .filter(s => s && s.id && !skipSet.has(s.id));
+    .filter(s => s && (s.id || s.uid) && !skipSet.has(s.id || s.uid));
   const studentsWithPrefs = activeStudents.filter(s => s.preferences?.length > 0);
   const studentsWithoutPrefs = activeStudents.filter(s => !s.preferences?.length);
 
   /* ── Build state for preference-having students ── */
   const state = new Map();
   for (const s of studentsWithPrefs) {
-    state.set(s.id, { student: s, propIdx: 0, allocKey: null, occupiedSlots: new Set() });
+    state.set(studentKey(s), { student: s, propIdx: 0, allocKey: null, occupiedSlots: new Set() });
   }
 
   /* ── Gale-Shapley main loop ── */
@@ -107,7 +117,7 @@ export function runAllocation(students, courses, skipStudentIds = []) {
   while (free.length > 0) {
     const nextFree = [];
     for (const student of free) {
-      const st = state.get(student.id);
+      const st = state.get(studentKey(student));
       while (st.propIdx < student.preferences.length) {
         const key = student.preferences[st.propIdx++];
         const course = courseMap[key];
@@ -129,7 +139,7 @@ export function runAllocation(students, courses, skipStudentIds = []) {
             course.enrolled.push(student);
             st.allocKey = key;
             if (course.timetableSlot) st.occupiedSlots.add(course.timetableSlot);
-            const wst = state.get(worst.id);
+            const wst = state.get(studentKey(worst));
             if (wst) {
               wst.allocKey = null;
               if (course.timetableSlot) wst.occupiedSlots.delete(course.timetableSlot);
@@ -173,7 +183,7 @@ export function runAllocation(students, courses, skipStudentIds = []) {
     const randomKey = availableCourseKeys[Math.floor(Math.random() * availableCourseKeys.length)];
     const course = courseMap[randomKey];
     course.enrolled.push(student);
-    randomAssignments.set(student.id, {
+    randomAssignments.set(studentKey(student), {
       allocKey: randomKey,
       courseName: course.courseName || null,
       timetableSlot: course.timetableSlot || null,
@@ -186,11 +196,11 @@ export function runAllocation(students, courses, skipStudentIds = []) {
   // Students who went through Gale-Shapley
   for (const [, st] of state) {
     const { student, allocKey } = st;
-    const randomFallback = randomAssignments.get(student.id);
+    const randomFallback = randomAssignments.get(studentKey(student));
     const finalKey = allocKey || randomFallback?.allocKey || null;
     const course = finalKey ? courseMap[finalKey] : null;
     allocations.push({
-      studentId: student.id,
+      studentId: studentKey(student),
       studentName: student.name,
       registrationNumber: student.registrationNumber || null,
       department: student.department || null,
@@ -209,9 +219,9 @@ export function runAllocation(students, courses, skipStudentIds = []) {
 
   // Students with no preferences
   for (const student of studentsWithoutPrefs) {
-    const randomFallback = randomAssignments.get(student.id);
+    const randomFallback = randomAssignments.get(studentKey(student));
     allocations.push({
-      studentId: student.id,
+      studentId: studentKey(student),
       studentName: student.name,
       registrationNumber: student.registrationNumber || null,
       department: student.department || null,
@@ -228,7 +238,7 @@ export function runAllocation(students, courses, skipStudentIds = []) {
   }
 
   /* ── Updated course seats ── */
-  const updatedCourses = Object.values(courseMap).map(({ enrolled, _key, ...rest }) => ({
+  const updatedCourses = Object.values(courseMap).map(({ enrolled, ...rest }) => ({
     ...rest,
     remainingSeats: Math.max(0, rest.seatCapacity - enrolled.length),
   }));

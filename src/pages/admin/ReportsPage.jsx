@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { getLocalUsers, getLocalCourses } from '../../utils/mockDatabase';
 import { useTheme } from 'styled-components';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -25,7 +26,6 @@ export default function ReportsPage() {
   const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
   const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
   const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
-  const mainBg = isDark ? '#080d1a' : theme.colors.background;
 
   const cardStyle = {
     background: cardBg,
@@ -69,21 +69,31 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef(null);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchData() {
       try {
-        const [coursesSnap, studentsSnap, allocSnap] = await Promise.all([
-          getDocs(collection(db, 'courses')),
-          getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'allocations')),
-        ]);
-        setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setStudents(
-          studentsSnap.docs
-            .filter(d => d.data().role === 'student')
-            .map(d => ({ id: d.id, ...d.data() }))
-        );
-        setAllocations(allocSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        if (isDemoFirebase) {
+          const localCrs = getLocalCourses();
+          const localStds = getLocalUsers().filter(u => u.role === 'student');
+          const mockAllocsData = localStorage.getItem('vuca_mock_allocations');
+          const mockAllocs = mockAllocsData ? JSON.parse(mockAllocsData) : [];
+          setCourses(localCrs);
+          setStudents(localStds);
+          setAllocations(mockAllocs);
+        } else {
+          const [coursesSnap, studentsSnap, allocSnap] = await Promise.all([
+            getDocs(collection(db, 'courses')),
+            getDocs(collection(db, 'users')),
+            getDocs(collection(db, 'allocations')),
+          ]);
+          setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+          setStudents(
+            studentsSnap.docs
+              .filter(d => d.data().role === 'student')
+              .map(d => ({ id: d.id, ...d.data() }))
+          );
+          setAllocations(allocSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        }
       } catch (e) { console.error(e); }
       setLoading(false);
     }
@@ -432,7 +442,7 @@ export default function ReportsPage() {
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
-                      label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                       labelLine={{ stroke: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', strokeWidth: 1 }}
                     >
                       {deptData.map((entry, i) => (

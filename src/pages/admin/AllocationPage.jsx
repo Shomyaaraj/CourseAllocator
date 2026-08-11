@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs, doc, writeBatch } from 'firebase/firestore';
 import { runAllocation } from '../../utils/allocationEngine';
 import { useTheme } from 'styled-components';
@@ -11,6 +12,7 @@ import {
   HiXMark, HiArrowPath,
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
+import { getLocalUsers, saveLocalUser, getLocalCourses, saveLocalCourses } from '../../utils/mockDatabase';
 
 /* ─────────────────────────────────────────────
    Run-Mode Confirmation Modal
@@ -248,27 +250,54 @@ export default function AllocationPage() {
   const [filter, setFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => { fetchData(); }, []);
-
-  async function fetchData() {
+async function fetchData() {
     try {
-      const [studentsSnap, coursesSnap, allocSnap] = await Promise.all([
-        getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'courses')),
-        getDocs(collection(db, 'allocations')),
-      ]);
-      setStudents(
-        studentsSnap.docs
+      if (isDemoFirebase) {
+        const localStds = getLocalUsers().filter(u => u.role === 'student');
+        const localCrs = getLocalCourses();
+        const mockAllocsData = localStorage.getItem('vuca_mock_allocations');
+        const mockAllocs = mockAllocsData ? JSON.parse(mockAllocsData) : [];
+        setStudents(localStds);
+        setCourses(localCrs);
+        setAllocations(mockAllocs);
+        if (mockAllocs.length > 0) setHasRun(true);
+      } else {
+        const [studentsSnap, coursesSnap, allocSnap] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'courses')),
+          getDocs(collection(db, 'allocations')),
+        ]);
+        const stds = studentsSnap.docs
           .filter(d => d.data().role === 'student')
-          .map(d => ({ id: d.id, ...d.data() }))
-      );
-      setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      const existingAllocs = allocSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setAllocations(existingAllocs);
-      if (existingAllocs.length > 0) setHasRun(true);
-    } catch (e) { console.error(e); }
+          .map(d => ({ id: d.id, ...d.data() }));
+        const crs = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const existingAllocs = allocSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        setStudents(stds.length > 0 ? stds : getLocalUsers().filter(u => u.role === 'student'));
+        setCourses(crs.length > 0 ? crs : getLocalCourses());
+
+        const mockAllocsData = localStorage.getItem('vuca_mock_allocations');
+        const mockAllocs = mockAllocsData ? JSON.parse(mockAllocsData) : [];
+        const finalAllocs = existingAllocs.length > 0 ? existingAllocs : mockAllocs;
+        setAllocations(finalAllocs);
+        if (finalAllocs.length > 0) setHasRun(true);
+      }
+    } catch {
+      const localStds = getLocalUsers().filter(u => u.role === 'student');
+      const localCrs = getLocalCourses();
+      const mockAllocsData = localStorage.getItem('vuca_mock_allocations');
+      const mockAllocs = mockAllocsData ? JSON.parse(mockAllocsData) : [];
+      setStudents(localStds);
+      setCourses(localCrs);
+      setAllocations(mockAllocs);
+      if (mockAllocs.length > 0) setHasRun(true);
+    }
     setLoading(false);
   }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Called when admin picks a mode from the modal
   async function handleRunAllocation(mode) {
@@ -278,14 +307,16 @@ export default function AllocationPage() {
     try {
       if (mode === 'all') {
         /* ── Full reset ── */
-        const existingSnap = await getDocs(collection(db, 'allocations'));
-        const batch = writeBatch(db);
-        existingSnap.forEach(d => batch.delete(d.ref));
-        const usersSnap = await getDocs(collection(db, 'users'));
-        usersSnap.docs
-          .filter(d => d.data().role === 'student')
-          .forEach(d => batch.update(d.ref, { allocatedCourse: null }));
-        await batch.commit();
+        try {
+          const existingSnap = await getDocs(collection(db, 'allocations'));
+          const batch = writeBatch(db);
+          existingSnap.forEach(d => batch.delete(d.ref));
+          const usersSnap = await getDocs(collection(db, 'users'));
+          usersSnap.docs
+            .filter(d => d.data().role === 'student')
+            .forEach(d => batch.update(d.ref, { allocatedCourse: null }));
+          await batch.commit();
+        } catch (e) { console.warn(e); }
 
         const { allocations: results, updatedCourses } = runAllocation(students, courses);
         await writeResults(results, updatedCourses);
@@ -299,8 +330,6 @@ export default function AllocationPage() {
 
       } else {
         /* ── Unallocated only ── */
-        // Use the set of student IDs that already have a course — this catches
-        // new students who have NO allocation document at all.
         const allocatedStudentIds = new Set(
           allocations.filter(a => a.allocatedCourse).map(a => a.studentId)
         );
@@ -312,14 +341,10 @@ export default function AllocationPage() {
           courses,
           skipIds
         );
-        await writeResults(results, updatedCourses, /* partial */ true);
+        await writeResults(results, updatedCourses);
 
         const numAllocated = results.filter(r => r.allocatedCourse).length;
-        const numRandom = results.filter(r => r.randomlyAssigned).length;
-        toast.success(
-          `Partial allocation complete — ${numAllocated}/${studentsToProcess.length} newly allocated` +
-          (numRandom > 0 ? ` (${numRandom} randomly assigned)` : '') + '.'
-        );
+        toast.success(`Partial allocation complete — ${numAllocated} student(s) newly allocated.`);
       }
 
       setHasRun(true);
@@ -331,11 +356,33 @@ export default function AllocationPage() {
     setRunning(false);
   }
 
-  async function writeResults(results, updatedCourses, partial = false) {
-    const batch2 = writeBatch(db);
+  async function writeResults(results, updatedCourses) {
+    // Save to local storage for local/offline testing
+    localStorage.setItem('vuca_mock_allocations', JSON.stringify(results));
+    saveLocalCourses(updatedCourses);
+    setCourses(updatedCourses);
 
-    if (!partial) {
-      // For full run: write all new allocations
+    for (const alloc of results) {
+      const student = students.find(s => s.id === alloc.studentId || s.uid === alloc.studentId);
+      if (student && alloc.allocatedCourse) {
+        saveLocalUser({ ...student, allocatedCourse: alloc.allocatedCourse });
+        // Also update the current session profile so an already-logged-in
+        // student sees their result immediately (demo mode).
+        const session = localStorage.getItem('vuca_current_profile_session');
+        if (session) {
+          try {
+            const profile = JSON.parse(session);
+            if ((profile.uid || profile.id) === alloc.studentId) {
+              profile.allocatedCourse = alloc.allocatedCourse;
+              localStorage.setItem('vuca_current_profile_session', JSON.stringify(profile));
+            }
+          } catch { /* ignore malformed session */ }
+        }
+      }
+    }
+
+    try {
+      const batch2 = writeBatch(db);
       for (const alloc of results) {
         const allocRef = doc(collection(db, 'allocations'));
         batch2.set(allocRef, alloc);
@@ -345,43 +392,18 @@ export default function AllocationPage() {
           });
         }
       }
-    } else {
-      // For partial: only upsert the newly processed students
-      const existingSnap = await getDocs(collection(db, 'allocations'));
-      for (const alloc of results) {
-        const existingDoc = existingSnap.docs.find(d => d.data().studentId === alloc.studentId);
-        if (existingDoc) {
-          batch2.update(existingDoc.ref, {
-            allocatedCourse: alloc.allocatedCourse,
-            courseName: alloc.courseName,
-            timetableSlot: alloc.timetableSlot,
-            preferenceRank: alloc.preferenceRank,
-            randomlyAssigned: alloc.randomlyAssigned,
-            unallocated: alloc.unallocated,
-            timestamp: alloc.timestamp,
-          });
-        } else {
-          const allocRef = doc(collection(db, 'allocations'));
-          batch2.set(allocRef, alloc);
-        }
-        if (alloc.allocatedCourse) {
-          batch2.update(doc(db, 'users', alloc.studentId), {
-            allocatedCourse: alloc.allocatedCourse,
+      for (const course of updatedCourses) {
+        const courseDoc = courses.find(c => (c.courseId || c.id) === (course.courseId || course.id));
+        if (courseDoc) {
+          batch2.update(doc(db, 'courses', courseDoc.id), {
+            remainingSeats: course.remainingSeats,
           });
         }
       }
+      await batch2.commit();
+    } catch {
+      console.warn('Firestore writeResults fallback to local storage');
     }
-
-    // Update course seats
-    for (const course of updatedCourses) {
-      const courseDoc = courses.find(c => (c.courseId || c.id) === (course.courseId || course.id));
-      if (courseDoc) {
-        batch2.update(doc(db, 'courses', courseDoc.id), {
-          remainingSeats: course.remainingSeats,
-        });
-      }
-    }
-    await batch2.commit();
     setAllocations(results);
   }
 

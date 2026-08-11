@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useTheme } from 'styled-components';
 import {
@@ -9,6 +9,7 @@ import {
   HiSparkles, HiChevronUp, HiChevronDown, HiTrash, HiChartBar,
 } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
+import { getLocalCourses, getLocalSettings, saveLocalUser } from '../../utils/mockDatabase';
 
 export default function PreferencePage() {
   const { currentUser, userProfile, setUserProfile } = useAuth();
@@ -57,22 +58,47 @@ export default function PreferencePage() {
   const [saving, setSaving] = useState(false);
   const [deadline, setDeadline] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [now, setNow] = useState(() => Date.now());
   const [recommendations, setRecommendations] = useState([]);
   const [cgpaInput, setCgpaInput] = useState('');
-  const [savingCgpa, setSavingCgpa] = useState(false);
+const [savingCgpa, setSavingCgpa] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchData() {
       try {
-        const coursesSnap = await getDocs(collection(db, 'courses'));
-        const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setCourses(coursesList);
+        let coursesList;
 
-        const settingsSnap = await getDoc(doc(db, 'settings', 'general'));
-        if (settingsSnap.exists()) {
-          const dl = settingsSnap.data().preferenceDeadline;
-          if (dl) setDeadline(new Date(dl.seconds ? dl.seconds * 1000 : dl));
+        // Demo mode: skip Firestore, use local mock data instantly
+        if (isDemoFirebase) {
+          coursesList = getLocalCourses();
+          const localSet = getLocalSettings();
+          if (localSet?.preferenceDeadline) setDeadline(new Date(localSet.preferenceDeadline));
+        } else {
+          try {
+            const coursesSnap = await getDocs(collection(db, 'courses'));
+            coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch {
+            coursesList = getLocalCourses();
+          }
+          if (!coursesList || coursesList.length === 0) {
+            coursesList = getLocalCourses();
+          }
+          try {
+            const settingsSnap = await getDoc(doc(db, 'settings', 'general'));
+            if (settingsSnap.exists()) {
+              const dl = settingsSnap.data().preferenceDeadline;
+              if (dl) setDeadline(new Date(dl.seconds ? dl.seconds * 1000 : dl));
+            } else {
+              const localSet = getLocalSettings();
+              if (localSet?.preferenceDeadline) setDeadline(new Date(localSet.preferenceDeadline));
+            }
+          } catch {
+            const localSet = getLocalSettings();
+            if (localSet?.preferenceDeadline) setDeadline(new Date(localSet.preferenceDeadline));
+          }
         }
+        setCourses(coursesList);
 
         if (userProfile?.preferences?.length > 0) setPreferences(userProfile.preferences);
         if (userProfile?.cgpa != null) setCgpaInput(String(userProfile.cgpa));
@@ -86,7 +112,8 @@ export default function PreferencePage() {
         setRecommendations(recommended);
       } catch (e) {
         console.error(e);
-        toast.error('Failed to load courses');
+        const fallbackCourses = getLocalCourses();
+        setCourses(fallbackCourses);
       }
       setLoading(false);
     }
@@ -96,7 +123,9 @@ export default function PreferencePage() {
   useEffect(() => {
     if (!deadline) return;
     const interval = setInterval(() => {
-      const diff = deadline.getTime() - Date.now();
+      const currentTime = Date.now();
+      setNow(currentTime);
+      const diff = deadline.getTime() - currentTime;
       if (diff <= 0) { setTimeLeft(null); clearInterval(interval); }
       else setTimeLeft({
         days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -108,7 +137,7 @@ export default function PreferencePage() {
     return () => clearInterval(interval);
   }, [deadline]);
 
-  const deadlinePassed = deadline && deadline.getTime() < Date.now();
+  const deadlinePassed = Boolean(deadline && deadline.getTime() < now);
 
   function addPreference(courseId) {
     if (preferences.includes(courseId)) return toast.error('Course already in preferences');
@@ -139,24 +168,38 @@ export default function PreferencePage() {
     const val = parseFloat(cgpaInput);
     if (!cgpaInput || isNaN(val) || val < 0 || val > 10) return toast.error('Enter a valid CGPA between 0 and 10');
     setSavingCgpa(true);
+    const updatedProfile = { ...userProfile, cgpa: val };
+    setUserProfile(updatedProfile);
+    saveLocalUser(updatedProfile);
     try {
-      await updateDoc(doc(db, 'users', currentUser.uid), { cgpa: val });
-      setUserProfile({ ...userProfile, cgpa: val });
-      toast.success('CGPA updated!');
-    } catch { toast.error('Failed to update CGPA'); }
+      if (currentUser?.uid) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { cgpa: val });
+      }
+    } catch {
+      console.warn('Firestore CGPA update fallback to local storage');
+    }
+    toast.success('CGPA updated!');
     setSavingCgpa(false);
   }
 
-  async function savePreferences() {
+async function savePreferences() {
     if (deadlinePassed) return toast.error('Deadline has passed');
     if (preferences.length === 0) return toast.error('Please select at least one course');
     setSaving(true);
+    const updatedProfile = { ...userProfile, preferences };
+    setUserProfile(updatedProfile);
+    saveLocalUser(updatedProfile);
     try {
-      await updateDoc(doc(db, 'users', currentUser.uid), { preferences });
-      setUserProfile({ ...userProfile, preferences });
-      toast.success('Preferences saved successfully!');
-    } catch { toast.error('Failed to save preferences'); }
+      if (currentUser?.uid) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { preferences });
+      }
+    } catch {
+      console.warn('Firestore preferences update fallback to local storage');
+    }
     setSaving(false);
+    setSaveSuccess(true);
+    toast.success('Preferences saved successfully!');
+    setTimeout(() => setSaveSuccess(false), 2000);
   }
 
   function getCourse(id) { return courses.find(c => c.id === id || c.courseId === id); }
@@ -428,26 +471,61 @@ export default function PreferencePage() {
 
           <div style={{ height: 1, background: isDark ? 'rgba(201,168,76,0.1)' : theme.colors.border, margin: '4px 0 16px' }} />
 
-          <button
-            onClick={savePreferences}
-            disabled={isDisabled}
-            style={{
-              width: '100%', padding: '13px',
-              background: isDisabled ? (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)') : accentColor,
-              color: isDisabled ? textMuted : '#080d1a',
-              fontSize: 14, fontWeight: 700,
-              border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
-              borderRadius: 10, cursor: isDisabled ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.02em',
-            }}
-          >
-            {saving ? (
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ width: 14, height: 14, border: '2px solid ' + textMuted, borderTopColor: accentColor, borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
-                Saving…
-              </span>
-            ) : deadlinePassed ? 'Deadline Passed' : 'Save Preferences'}
-          </button>
+<AnimatePresence mode="wait">
+            {saveSuccess ? (
+              <motion.button
+                key="success"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 14, stiffness: 300 }}
+                style={{
+                  width: '100%', padding: '13px',
+                  background: 'rgba(29,158,117,0.12)',
+                  color: '#1d9e75',
+                  fontSize: 14, fontWeight: 700,
+                  border: '1px solid rgba(29,158,117,0.3)',
+                  borderRadius: 10, cursor: 'default',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                <motion.span
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <HiCheckCircle style={{ width: 18, height: 18 }} />
+                  Saved!
+                </motion.span>
+              </motion.button>
+            ) : (
+              <motion.button
+                key="save"
+                initial={{ scale: 1 }}
+                whileTap={!isDisabled ? { scale: 0.97 } : {}}
+                onClick={savePreferences}
+                disabled={isDisabled}
+                style={{
+                  width: '100%', padding: '13px',
+                  background: isDisabled ? (isDark ? 'rgba(201,168,76,0.15)' : 'rgba(255,130,92,0.15)') : accentColor,
+                  color: isDisabled ? textMuted : '#080d1a',
+                  fontSize: 14, fontWeight: 700,
+                  border: '1px solid ' + (isDark ? 'rgba(201,168,76,0.2)' : 'rgba(255,130,92,0.2)'),
+                  borderRadius: 10, cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  letterSpacing: '0.02em',
+                  transition: 'background 0.2s, transform 0.1s',
+                }}
+              >
+                {saving ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <span style={{ width: 14, height: 14, border: '2px solid ' + textMuted, borderTopColor: accentColor, borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+                    Saving…
+                  </span>
+                ) : deadlinePassed ? 'Deadline Passed' : 'Save Preferences'}
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
       </div>

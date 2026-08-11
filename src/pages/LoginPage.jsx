@@ -63,9 +63,21 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const cred = await login(email, password);
-      // Verify the user's role matches the selected portal
-      const userSnap = await getDoc(doc(db, 'users', cred.user.uid));
-      const userRole = userSnap.exists() ? userSnap.data().role : 'student';
+
+      // Determine the user's role:
+      // 1. Prefer profile returned directly by login (works for demo/local fallback)
+      // 2. Fall back to Firestore lookup (real Firebase), wrapped in try/catch so a
+      //    Firestore failure never blocks a successful login.
+      let userRole = cred.profile?.role;
+      if (!userRole) {
+        try {
+          const userSnap = await getDoc(doc(db, 'users', cred.user.uid));
+          userRole = userSnap.exists() ? userSnap.data().role : 'student';
+        } catch (e) {
+          console.warn('[LoginPage] Could not fetch role from Firestore, defaulting to student:', e);
+          userRole = 'student';
+        }
+      }
 
       if (mode === 'admin' && userRole !== 'admin') {
         await logout();

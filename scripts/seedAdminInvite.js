@@ -1,3 +1,4 @@
+/* global require, process */
 /**
  * seedAdminInvite.js
  * ──────────────────

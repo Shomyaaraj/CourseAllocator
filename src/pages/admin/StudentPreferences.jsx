@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '../../firebase';
+import { db, isDemoFirebase } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useTheme } from 'styled-components';
 import { HiUserGroup, HiMagnifyingGlass, HiQueueList } from 'react-icons/hi2';
+
+import { getLocalUsers, getLocalCourses } from '../../utils/mockDatabase';
 
 export default function StudentPreferences() {
   const theme = useTheme();
@@ -14,7 +16,6 @@ export default function StudentPreferences() {
   const textMuted = isDark ? '#3a4a60' : theme.colors.textLight;
   const borderColor = isDark ? 'rgba(255,255,255,0.06)' : theme.colors.border;
   const cardBg = isDark ? '#0d1425' : theme.colors.cardBg;
-  const mainBg = isDark ? '#080d1a' : theme.colors.background;
   const rowHoverBg = isDark ? 'rgba(255,255,255,0.02)' : theme.colors.secondaryBg;
 
   const thStyle = {
@@ -44,20 +45,28 @@ export default function StudentPreferences() {
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchData() {
       try {
-        const [studentsSnap, coursesSnap] = await Promise.all([
-          getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'courses')),
-        ]);
-        setStudents(
-          studentsSnap.docs
+        if (isDemoFirebase) {
+          setStudents(getLocalUsers().filter(u => u.role === 'student'));
+          setCourses(getLocalCourses());
+        } else {
+          const [studentsSnap, coursesSnap] = await Promise.all([
+            getDocs(collection(db, 'users')),
+            getDocs(collection(db, 'courses')),
+          ]);
+          const stds = studentsSnap.docs
             .filter(d => d.data().role === 'student')
-            .map(d => ({ id: d.id, ...d.data() }))
-        );
-        setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (e) { console.error(e); }
+            .map(d => ({ id: d.id, ...d.data() }));
+          const crs = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setStudents(stds.length > 0 ? stds : getLocalUsers().filter(u => u.role === 'student'));
+          setCourses(crs.length > 0 ? crs : getLocalCourses());
+        }
+      } catch {
+        setStudents(getLocalUsers().filter(u => u.role === 'student'));
+        setCourses(getLocalCourses());
+      }
       setLoading(false);
     }
     fetchData();
